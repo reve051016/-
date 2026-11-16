@@ -15,20 +15,31 @@ h1{font-size:22px;margin:0 0 4px}
 .row{display:flex;gap:8px}
 input{flex:1;min-width:0;font-size:17px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text)}
 input:focus{outline:2px solid var(--accent);border-color:transparent}
+button{font-family:inherit}
 button.go{font-size:16px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
 button.go:disabled{opacity:.5}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
 .card h2{font-size:13px;letter-spacing:.04em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .word{font-size:28px;font-weight:700;margin:0}
 .pos{color:var(--muted);font-size:14px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:0;border-radius:999px;padding:6px 14px;font-size:15px;cursor:pointer}
-.chip.syn{background:var(--syn);color:var(--syn-t)}
-.chip.ant{background:var(--ant);color:var(--ant-t)}
+.zhw{font-size:18px;color:var(--accent);font-weight:600}
+.sp{border:0;background:var(--line);color:var(--text);border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;flex:none;padding:0}
+.sp.big{width:40px;height:40px;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.cw{display:inline-flex;align-items:stretch;border-radius:14px;overflow:hidden}
+.chip{border:0;padding:6px 12px;font-size:15px;text-align:left;cursor:pointer}
+.chip small{display:block;font-size:12px;opacity:.8;min-height:1.2em}
+.cw .sp{border-radius:0;width:30px;height:auto;background:transparent;opacity:.8}
+.cw.syn{background:var(--syn);color:var(--syn-t)}
+.cw.ant{background:var(--ant);color:var(--ant-t)}
+.cw .chip{background:transparent;color:inherit}
+.cw .sp{color:inherit}
 ul{list-style:none;margin:0;padding:0}
-li{padding:9px 0;border-top:1px solid var(--line);font-size:16px}
+li{padding:10px 0;border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
 li:first-child{border-top:0;padding-top:0}
-li small{display:block;color:var(--muted);font-size:12px}
+li .t{flex:1;font-size:16px}
+li small{display:block;color:var(--muted);font-size:13px;min-height:1.2em}
 .msg{color:var(--muted);text-align:center;padding:24px 0}
 .err{color:var(--ant-t);background:var(--ant);border-radius:10px;padding:10px 12px;margin-top:14px;font-size:14px}
 </style>
@@ -36,7 +47,7 @@ li small{display:block;color:var(--muted);font-size:12px}
 <body>
 <main>
   <h1>單字探索器</h1>
-  <p class="sub">輸入英文單字，取得同義詞、反義詞與英文短句</p>
+  <p class="sub">輸入英文單字，取得發音、同義詞、反義詞（含中文）與簡單英文描述</p>
   <div class="row">
     <input id="q" type="text" placeholder="例如：happy" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search">
     <button class="go" id="go">查詢</button>
@@ -58,84 +69,187 @@ async function getJSON(url){
 }
 const safe = p => p.catch(() => null);
 
-function uniq(arr, skip){
+/* ---------- 發音 ---------- */
+let currentAudio = null;
+function speak(text){
+  try {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.rate = 0.9;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function playWord(word, audioUrl){
+  if (audioUrl) {
+    try {
+      speechSynthesis.cancel();
+      currentAudio = new Audio(audioUrl);
+      currentAudio.play().catch(() => speak(word));
+      return;
+    } catch (e) {}
+  }
+  speak(word);
+}
+
+/* ---------- 翻譯（英 → 繁中） ---------- */
+async function translate(texts){
+  const map = {};
+  const list = [...new Set(texts.map(t => t.trim()).filter(Boolean))];
+  if (!list.length) return map;
+  try {
+    const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=" +
+      encodeURIComponent(list.join("\n"));
+    const data = await getJSON(url);
+    (data[0] || []).forEach(seg => {
+      if (seg && seg[0] && seg[1]) map[seg[1].trim()] = seg[0].trim();
+    });
+  } catch (e) {}
+  const missing = list.filter(t => !map[t]).slice(0, 30);   // 備援：MyMemory
+  await Promise.all(missing.map(async t => {
+    try {
+      const d = await getJSON("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(t) + "&langpair=en|zh-TW");
+      const tr = d && d.responseData && d.responseData.translatedText;
+      if (tr && !/MYMEMORY|QUERY LENGTH|INVALID/i.test(tr)) map[t] = tr;
+    } catch (e) {}
+  }));
+  return map;
+}
+
+/* ---------- 查詢 ---------- */
+const POSMAP = { noun: "n", verb: "v", adjective: "adj", adverb: "adv" };
+const freq = x => { const t = (x.tags || []).find(s => s.startsWith("f:")); return t ? parseFloat(t.slice(2)) : 0; };
+
+function dedupe(items, skip){
   const seen = new Set([skip]);
-  return arr.filter(x => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+  return items.filter(x => x && x.word && !seen.has(x.word.toLowerCase()) && seen.add(x.word.toLowerCase()));
 }
 
 async function lookup(word){
   const w = encodeURIComponent(word);
-  const [dict, syn, ant, jjb, jja] = await Promise.all([
+  const [dict, syn, ant, me] = await Promise.all([
     safe(getJSON("https://api.dictionaryapi.dev/api/v2/entries/en/" + w)),
-    safe(getJSON("https://api.datamuse.com/words?rel_syn=" + w + "&max=15")),
-    safe(getJSON("https://api.datamuse.com/words?rel_ant=" + w + "&max=10")),
-    safe(getJSON("https://api.datamuse.com/words?rel_jjb=" + w + "&max=8")),   // 形容這個名詞的形容詞
-    safe(getJSON("https://api.datamuse.com/words?rel_jja=" + w + "&max=8"))    // 這個形容詞常修飾的名詞
+    safe(getJSON("https://api.datamuse.com/words?rel_syn=" + w + "&md=f&max=30")),
+    safe(getJSON("https://api.datamuse.com/words?rel_ant=" + w + "&md=f&max=20")),
+    safe(getJSON("https://api.datamuse.com/words?sp=" + w + "&md=p&max=1"))
   ]);
 
   const lw = word.toLowerCase();
-  let synonyms = (syn || []).map(x => x.word);
-  let antonyms = (ant || []).map(x => x.word);
-  const defs = [], examples = [];
+  const syns = (syn || []).map(x => ({ word: x.word, f: freq(x) }));
+  const ants = (ant || []).map(x => ({ word: x.word, f: freq(x) }));
+  const defs = [];
+  let pos = "";
+  let audio = "";
+  let phonetic = (dict && dict[0] && dict[0].phonetic) || "";
 
-  (dict || []).forEach(entry => (entry.meanings || []).forEach(m => {
-    (m.synonyms || []).forEach(s => synonyms.push(s));
-    (m.antonyms || []).forEach(s => antonyms.push(s));
-    (m.definitions || []).slice(0, 2).forEach(d => {
-      defs.push({ pos: m.partOfSpeech, text: d.definition });
-      if (d.example) examples.push(cap(d.example.trim()));
-      (d.synonyms || []).forEach(s => synonyms.push(s));
-      (d.antonyms || []).forEach(s => antonyms.push(s));
+  (dict || []).forEach(entry => {
+    (entry.phonetics || []).forEach(p => {
+      if (!audio && p.audio) audio = p.audio.startsWith("//") ? "https:" + p.audio : p.audio;
+      if (!phonetic && p.text) phonetic = p.text;
     });
-  }));
+    (entry.meanings || []).forEach(m => {
+      if (!pos) pos = POSMAP[m.partOfSpeech] || "";
+      (m.synonyms || []).forEach(s => syns.push({ word: s, f: 0 }));
+      (m.antonyms || []).forEach(s => ants.push({ word: s, f: 0 }));
+      (m.definitions || []).slice(0, 2).forEach(d => {
+        defs.push({ pos: m.partOfSpeech, text: d.definition });
+        (d.synonyms || []).forEach(s => syns.push({ word: s, f: 0 }));
+        (d.antonyms || []).forEach(s => ants.push({ word: s, f: 0 }));
+      });
+    });
+  });
+  if (!pos && me && me[0] && me[0].tags) {
+    const t = me[0].tags.find(x => ["n", "v", "adj", "adv"].includes(x));
+    if (t) pos = t;
+  }
 
-  // 用搭配詞組成短語
-  const phrases = [];
-  (jjb || []).slice(0, 5).forEach(x => phrases.push(cap(art(x.word) + x.word + " " + lw)));
-  (jja || []).slice(0, 5).forEach(x => phrases.push(cap(lw + " " + x.word)));
-
-  const found = (dict && dict.length) || synonyms.length || antonyms.length || phrases.length;
-  if (!found) return null;
+  const synonyms = dedupe(syns, lw).slice(0, 12);
+  const antonyms = dedupe(ants, lw).slice(0, 10);
+  if (!(dict && dict.length) && !synonyms.length && !antonyms.length) return null;
 
   return {
     word: (dict && dict[0] && dict[0].word) || word,
-    phonetic: dict && dict[0] && dict[0].phonetic,
-    defs: defs.slice(0, 4),
-    synonyms: uniq(synonyms, lw).slice(0, 12),
-    antonyms: uniq(antonyms, lw).slice(0, 10),
-    examples: uniq(examples, "").slice(0, 5),
-    phrases: uniq(phrases, "").slice(0, 6)
+    phonetic, audio, pos,
+    defs: defs.slice(0, 3),
+    synonyms, antonyms,
+    sentences: simpleSentences(lw, pos, dedupe(syns, lw), dedupe(ants, lw), defs)
   };
 }
 
+/* 用基礎詞彙（挑常用的同義/反義詞）組成描述這個單字的短句 */
+function simpleSentences(w, pos, syns, ants, defs){
+  const basic = list => {
+    const common = list.filter(x => x.f >= 3).sort((a, b) => b.f - a.f);
+    const rest = list.filter(x => x.f < 3);
+    return [...common, ...rest].map(x => x.word).slice(0, 3);
+  };
+  const S = basic(syns), A = basic(ants);
+  const W = cap(w), out = [];
+
+  if (S[0]) {
+    if (pos === "adj") out.push(`Something is ${w} when it is ${S[0]}.`);
+    else if (pos === "v") out.push(`To ${w} is to ${S[0]}.`);
+    else if (pos === "adv") out.push(`To do it ${w} is to do it ${S[0]}.`);
+    else out.push(`${cap(art(w) + w)} is also called ${art(S[0]) + S[0]}.`);
+  }
+  if (S[1]) out.push(`${W} means almost the same as “${S[0]}” or “${S[1]}”.`);
+  if (S[2]) out.push(`People also say “${S[2]}” when they mean ${w}.`);
+  if (A[0]) out.push(`${W} is the opposite of “${A[0]}”.`);
+  if (A[1]) out.push(`You can say “${A[1]}” for the opposite of ${w}.`);
+
+  if (out.length < 3 && defs.length) {
+    const short = defs.map(d => d.text).sort((a, b) => a.length - b.length)[0];
+    if (short && short.split(" ").length <= 14) out.push(`In short: ${short.replace(/\.$/, "")}.`);
+  }
+  return out.slice(0, 5);
+}
+
+/* ---------- 畫面 ---------- */
 const chips = (list, cls) => list.length
-  ? '<div class="chips">' + list.map(x => '<button class="chip ' + cls + '" data-w="' + esc(x) + '">' + esc(x) + '</button>').join("") + '</div>'
+  ? '<div class="chips">' + list.map(x =>
+      '<span class="cw ' + cls + '"><button class="chip" data-w="' + esc(x.word) + '">' + esc(x.word) +
+      '<small class="zh" data-t="' + esc(x.word) + '"></small></button>' +
+      '<button class="sp" data-s="' + esc(x.word) + '" aria-label="發音">🔊</button></span>').join("") + '</div>'
   : '<span class="pos">（找不到）</span>';
 
 function render(d){
-  let html = '<div class="card"><p class="word">' + esc(d.word) + '</p>' +
+  let html = '<div class="card"><div class="head"><p class="word">' + esc(d.word) + '</p>' +
+    '<button class="sp big" id="mainsp" aria-label="發音">🔊</button>' +
+    '<span class="zhw zh" data-t="' + esc(d.word) + '"></span></div>' +
     (d.phonetic ? '<div class="pos">' + esc(d.phonetic) + '</div>' : '') +
     d.defs.map(x => '<div class="pos">(' + esc(x.pos) + ') ' + esc(x.text) + '</div>').join("") + '</div>';
   html += '<div class="card"><h2>同義詞 SYNONYMS</h2>' + chips(d.synonyms, "syn") + '</div>';
   html += '<div class="card"><h2>反義詞 ANTONYMS</h2>' + chips(d.antonyms, "ant") + '</div>';
-  if (d.phrases.length)
-    html += '<div class="card"><h2>常見搭配短語 PHRASES</h2><ul>' + d.phrases.map(p => '<li>' + esc(p) + '</li>').join("") + '</ul></div>';
-  html += '<div class="card"><h2>例句 EXAMPLES</h2>' + (d.examples.length
-    ? '<ul>' + d.examples.map(e => '<li>' + esc(e) + '</li>').join("") + '</ul>'
-    : '<span class="pos">（這個字沒有收錄例句，可參考上方搭配短語）</span>') + '</div>';
+  html += '<div class="card"><h2>簡單描述 SIMPLE DESCRIPTIONS</h2>' + (d.sentences.length
+    ? '<ul>' + d.sentences.map(s =>
+        '<li><div class="t">' + esc(s) + '<small class="zh" data-t="' + esc(s) + '"></small></div>' +
+        '<button class="sp" data-s="' + esc(s) + '" aria-label="發音">🔊</button></li>').join("") + '</ul>'
+    : '<span class="pos">（資料不足，無法產生描述）</span>') + '</div>';
   out.innerHTML = html;
+  $("mainsp").addEventListener("click", () => playWord(d.word, d.audio));
 }
 
+async function fillTranslations(d){
+  const texts = [d.word, ...d.synonyms.map(x => x.word), ...d.antonyms.map(x => x.word), ...d.sentences];
+  const map = await translate(texts);
+  out.querySelectorAll(".zh").forEach(el => { el.textContent = map[el.dataset.t] || ""; });
+}
+
+let token = 0;
 async function search(word){
   word = (word || "").trim().split(/\s+/)[0];
   if (!word) return;
   q.value = word;
+  const my = ++token;
   go.disabled = true;
   out.innerHTML = '<div class="msg">查詢中…</div>';
   try {
     const d = await lookup(word);
-    if (d) render(d);
-    else out.innerHTML = '<div class="err">找不到「' + esc(word) + '」，請確認拼字。</div>';
+    if (my !== token) return;
+    if (!d) { out.innerHTML = '<div class="err">找不到「' + esc(word) + '」，請確認拼字。</div>'; return; }
+    render(d);
+    fillTranslations(d);
   } catch (e) {
     out.innerHTML = '<div class="err">查詢失敗，請確認網路連線後再試。</div>';
   } finally {
@@ -146,6 +260,8 @@ async function search(word){
 go.addEventListener("click", () => search(q.value));
 q.addEventListener("keydown", e => { if (e.key === "Enter") search(q.value); });
 out.addEventListener("click", e => {
+  const sp = e.target.closest("[data-s]");
+  if (sp) { speak(sp.dataset.s); return; }
   const b = e.target.closest(".chip");
   if (b) { search(b.dataset.w); window.scrollTo({ top: 0, behavior: "smooth" }); }
 });
