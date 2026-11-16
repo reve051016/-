@@ -118,6 +118,7 @@ async function translate(texts){
 }
 
 /* ---------- 查詢 ---------- */
+const POSZH = { n: "名詞", v: "動詞", adj: "形容詞", adv: "副詞" };
 const POSMAP = { noun: "n", verb: "v", adjective: "adj", adverb: "adv" };
 const freq = x => { const t = (x.tags || []).find(s => s.startsWith("f:")); return t ? parseFloat(t.slice(2)) : 0; };
 
@@ -152,7 +153,7 @@ async function lookup(word){
       if (!pos) pos = POSMAP[m.partOfSpeech] || "";
       (m.synonyms || []).forEach(s => syns.push({ word: s, f: 0 }));
       (m.antonyms || []).forEach(s => ants.push({ word: s, f: 0 }));
-      (m.definitions || []).slice(0, 2).forEach(d => {
+      (m.definitions || []).slice(0, 3).forEach(d => {
         defs.push({ pos: m.partOfSpeech, text: d.definition });
         (d.synonyms || []).forEach(s => syns.push({ word: s, f: 0 }));
         (d.antonyms || []).forEach(s => ants.push({ word: s, f: 0 }));
@@ -171,13 +172,13 @@ async function lookup(word){
   return {
     word: (dict && dict[0] && dict[0].word) || word,
     phonetic, audio, pos,
-    defs: defs.slice(0, 3),
+    defs: defs,
     synonyms, antonyms,
     sentences: simpleSentences(lw, pos, dedupe(syns, lw), dedupe(ants, lw), defs)
   };
 }
 
-/* 用基礎詞彙（挑常用的同義/反義詞）組成描述這個單字的短句 */
+/* 用簡短定義與最常用的同義/反義詞，組成描述這個單字的短句 */
 function simpleSentences(w, pos, syns, ants, defs){
   const basic = list => {
     const common = list.filter(x => x.f >= 3).sort((a, b) => b.f - a.f);
@@ -187,21 +188,16 @@ function simpleSentences(w, pos, syns, ants, defs){
   const S = basic(syns), A = basic(ants);
   const W = cap(w), out = [];
 
-  if (S[0]) {
-    if (pos === "adj") out.push(`Something is ${w} when it is ${S[0]}.`);
-    else if (pos === "v") out.push(`To ${w} is to ${S[0]}.`);
-    else if (pos === "adv") out.push(`To do it ${w} is to do it ${S[0]}.`);
-    else out.push(`${cap(art(w) + w)} is also called ${art(S[0]) + S[0]}.`);
-  }
-  if (S[1]) out.push(`${W} means almost the same as “${S[0]}” or “${S[1]}”.`);
-  if (S[2]) out.push(`People also say “${S[2]}” when they mean ${w}.`);
-  if (A[0]) out.push(`${W} is the opposite of “${A[0]}”.`);
-  if (A[1]) out.push(`You can say “${A[1]}” for the opposite of ${w}.`);
+  const clean = t => t.replace(/\s+/g, " ").replace(/[.;:]+$/, "").trim();
+  const wc = t => t.split(" ").length;
+  let cands = [...new Set(defs.map(d => clean(d.text)))].sort((a, b) => a.length - b.length);
+  let shortDefs = cands.filter(t => wc(t) <= 14).slice(0, 3);
+  if (!shortDefs.length && cands.length) shortDefs = [cands[0]];
+  shortDefs.forEach(t => out.push(`${W} means “${t.charAt(0).toLowerCase() + t.slice(1)}”.`));
 
-  if (out.length < 3 && defs.length) {
-    const short = defs.map(d => d.text).sort((a, b) => a.length - b.length)[0];
-    if (short && short.split(" ").length <= 14) out.push(`In short: ${short.replace(/\.$/, "")}.`);
-  }
+  if (S[1]) out.push(`You can also say “${S[0]}” or “${S[1]}”.`);
+  else if (S[0]) out.push(`You can also say “${S[0]}”.`);
+  if (A[0]) out.push(`The opposite is “${A[0]}”.`);
   return out.slice(0, 5);
 }
 
@@ -217,15 +213,14 @@ function render(d){
   let html = '<div class="card"><div class="head"><p class="word">' + esc(d.word) + '</p>' +
     '<button class="sp big" id="mainsp" aria-label="發音">🔊</button>' +
     '<span class="zhw zh" data-t="' + esc(d.word) + '"></span></div>' +
-    (d.phonetic ? '<div class="pos">' + esc(d.phonetic) + '</div>' : '') +
-    d.defs.map(x => '<div class="pos">(' + esc(x.pos) + ') ' + esc(x.text) + '</div>').join("") + '</div>';
-  html += '<div class="card"><h2>同義詞 SYNONYMS</h2>' + chips(d.synonyms, "syn") + '</div>';
-  html += '<div class="card"><h2>反義詞 ANTONYMS</h2>' + chips(d.antonyms, "ant") + '</div>';
-  html += '<div class="card"><h2>簡單描述 SIMPLE DESCRIPTIONS</h2>' + (d.sentences.length
+    '<div class="pos">' + (d.pos ? POSZH[d.pos] : "") + (d.pos && d.phonetic ? "　" : "") + esc(d.phonetic || "") + '</div></div>';
+  html += '<div class="card"><h2>同義詞</h2>' + chips(d.synonyms, "syn") + '</div>';
+  html += '<div class="card"><h2>反義詞</h2>' + chips(d.antonyms, "ant") + '</div>';
+  html += '<div class="card"><h2>簡單說明</h2>' + (d.sentences.length
     ? '<ul>' + d.sentences.map(s =>
         '<li><div class="t">' + esc(s) + '<small class="zh" data-t="' + esc(s) + '"></small></div>' +
         '<button class="sp" data-s="' + esc(s) + '" aria-label="發音">🔊</button></li>').join("") + '</ul>'
-    : '<span class="pos">（資料不足，無法產生描述）</span>') + '</div>';
+    : '<span class="pos">（資料不足，無法產生說明）</span>') + '</div>';
   out.innerHTML = html;
   $("mainsp").addEventListener("click", () => playWord(d.word, d.audio));
 }
