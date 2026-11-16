@@ -15,7 +15,7 @@
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,rgba(185,109,73,.10),transparent 28rem),var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC",sans-serif;line-height:1.65}
 button,input{font:inherit}button{cursor:pointer}
-.shell{max-width:850px;margin:auto;padding:38px 24px 64px}
+.shell{max-width:1100px;margin:auto;padding:38px 24px 64px}
 .brand{display:flex;align-items:center;gap:11px;margin-bottom:54px;font-weight:800;letter-spacing:.05em;font-size:13px}
 .brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:var(--accent);color:white;font:700 22px Georgia,serif;box-shadow:0 6px 16px #b96d4933}
 .brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.19em}
@@ -32,6 +32,11 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .primary:disabled{opacity:.55;cursor:wait;transform:none}
 .hint{margin-top:11px;color:#a09689;font-size:12px}
 #result{margin-top:28px}
+.layout{display:grid;gap:0 20px;grid-template-columns:minmax(300px,380px) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:"word senses" "ov senses" "syn senses" "ant senses" "fill senses";align-items:start}
+.a-word{grid-area:word}.a-ov{grid-area:ov}.a-syn{grid-area:syn}.a-ant{grid-area:ant}.a-senses{grid-area:senses}
+.layout .result-card{margin-top:14px}
+.layout .a-word{margin-top:0}.layout .a-senses{margin-top:14px}
+@media(max-width:900px){.shell{max-width:850px}.layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"word" "ov" "senses" "syn" "ant"}}
 .message{padding:28px 18px;text-align:center;color:var(--muted);background:#fffaf4;border:1px dashed #e6d8c9;border-radius:16px;font-size:14px}
 .message.error{color:var(--rose-text);background:var(--rose);border-color:#efd2c9}
 .message .chips{justify-content:center;margin-top:14px}
@@ -62,6 +67,23 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .chip.ant{background:var(--rose);color:var(--rose-text)}
 .chip:hover{filter:brightness(.97);transform:translateY(-1px)}
 .empty{color:var(--muted);font-size:13px}
+.badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--accent-dark);font-size:11px;font-weight:800}
+.ov-group{padding:11px 0;border-top:1px solid var(--line)}
+.ov-group:first-child{padding-top:0;border-top:0}
+.ov-row{display:flex;align-items:baseline;gap:9px;margin-top:7px;flex-wrap:wrap}
+.ov-row b{font-size:15px}
+.ov-row span{color:var(--muted);font-size:12px}
+.entry{padding:4px 0 2px}
+.entry+.entry{margin-top:18px;padding-top:18px;border-top:2px solid var(--line)}
+.entry-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}
+.entry-letter{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:800}
+.entry-word{font:700 20px Georgia,serif}
+.entry-ph{color:var(--muted);font-size:13px}
+.mini-sp{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:#faf5ee;color:var(--accent-dark);font-size:13px}
+.sense-no{display:inline-block;min-width:22px;margin-right:6px;color:var(--accent);font-weight:800;font-size:12px}
+.more{margin-top:2px}
+.more[hidden]{display:none}
+.more-btn{margin-top:12px;border:1px dashed #dcc7b5;border-radius:10px;background:#fff9f2;color:var(--accent-dark);padding:7px 14px;font-size:12.5px;font-weight:700}
 .loading{padding:30px 18px;text-align:center;color:var(--muted)}
 .skeleton{height:13px;max-width:360px;margin:9px auto;background:linear-gradient(90deg,#eee7dd,#faf6f0,#eee7dd);background-size:200% 100%;border-radius:9px;animation:shine 1.2s infinite}
 @keyframes shine{to{background-position:-200% 0}}
@@ -132,7 +154,7 @@ async function myMemory(text){
   }catch{ return ""; }
 }
 
-/* 單字：取得主要翻譯，以及各詞性的常用譯詞（比單純直譯精準） */
+/* 單字：取得主要翻譯，以及各詞性的多個常用譯詞（一詞多義的中文對應） */
 async function translateWord(word){
   const out = { main:"", byPos:{} };
   try{
@@ -140,8 +162,13 @@ async function translateWord(word){
     out.main = (data[0] || []).map(part => part?.[0] || "").join("").trim();
     (data[1] || []).forEach(group => {
       const name = group?.[0];
-      const words = (group?.[1] || []).slice(0, 4);
-      if(name && words.length) out.byPos[name] = words;
+      const raw = Array.isArray(group?.[2]) && group[2].length ? group[2] : (group?.[1] || []).map(z => [z, [], 0]);
+      const rows = raw.slice(0, 6).map(r => ({
+        zh:String(r?.[0] || ""),
+        backs:(r?.[1] || []).filter(b => typeof b === "string"),
+        score:Number(r?.[2]) || 0
+      })).filter(r => r.zh);
+      if(name && rows.length) out.byPos[name] = rows;
     });
   }catch{}
   if(!out.main) out.main = await myMemory(word);
@@ -278,34 +305,39 @@ function pushUnique(target, seen, word){
 }
 
 async function buildData(entries, word){
-  const first = entries[0];
-  let phonetic = first.phonetic || "";
-  let audio = "";
-  entries.forEach(entry => (entry.phonetics || []).forEach(p => {
-    if(!phonetic && p.text) phonetic = p.text;
-    if(!audio && p.audio) audio = p.audio.startsWith("//") ? "https:" + p.audio : p.audio;
-  }));
-
-  /* 依詞性分組，每個詞性最多 3 條解釋（字典已依常用程度排序），解釋與例句綁在一起 */
-  const groups = new Map();
   const dictSyn = [], dictAnt = [];
-  entries.forEach(entry => (entry.meanings || []).forEach(meaning => {
-    const pos = meaning.partOfSpeech || "other";
-    if(!groups.has(pos)) groups.set(pos, { pos, defs:[] });
-    const group = groups.get(pos);
-    (meaning.definitions || []).forEach(def => {
-      if(def.definition && group.defs.length < 3 && !group.defs.some(x => x.definition === def.definition)){
-        group.defs.push({ definition:def.definition, example:def.example || "" });
-      }
-      (def.synonyms || []).forEach(x => dictSyn.push(x));
-      (def.antonyms || []).forEach(x => dictAnt.push(x));
-    });
-    (meaning.synonyms || []).forEach(x => dictSyn.push(x));
-    (meaning.antonyms || []).forEach(x => dictAnt.push(x));
-  }));
+  const allDefs = new Set();
 
-  const posList = [...groups.values()].slice(0, 4);
-  const posTags = new Set(posList.map(g => POS_TAG[g.pos]).filter(Boolean));
+  /* 每個條目（同形異義詞，如 resume / résumé）各自保留音標與發音；
+     條目內依詞性分組，每組最多 10 條解釋，例句與解釋綁在一起 */
+  const built = entries.slice(0, 4).map(entry => {
+    let phonetic = entry.phonetic || "", audio = "";
+    (entry.phonetics || []).forEach(p => {
+      if(!phonetic && p.text) phonetic = p.text;
+      if(!audio && p.audio) audio = p.audio.startsWith("//") ? "https:" + p.audio : p.audio;
+    });
+    const groups = new Map();
+    (entry.meanings || []).forEach(meaning => {
+      const pos = meaning.partOfSpeech || "other";
+      if(!groups.has(pos)) groups.set(pos, { pos, defs:[] });
+      const group = groups.get(pos);
+      (meaning.definitions || []).forEach(def => {
+        if(!def.definition) return;
+        allDefs.add(def.definition);
+        if(group.defs.length < 10 && !group.defs.some(x => x.definition === def.definition)){
+          group.defs.push({ definition:def.definition, example:def.example || "" });
+        }
+        (def.synonyms || []).forEach(x => dictSyn.push(x));
+        (def.antonyms || []).forEach(x => dictAnt.push(x));
+      });
+      (meaning.synonyms || []).forEach(x => dictSyn.push(x));
+      (meaning.antonyms || []).forEach(x => dictAnt.push(x));
+    });
+    return { word:entry.word || word, phonetic, audio, groups:[...groups.values()].filter(g => g.defs.length) };
+  }).filter(e => e.groups.length);
+
+  const posTags = new Set();
+  built.forEach(e => e.groups.forEach(g => { if(POS_TAG[g.pos]) posTags.add(POS_TAG[g.pos]); }));
   const encoded = encodeURIComponent(word);
 
   const [synData, antData] = await Promise.all([
@@ -331,8 +363,9 @@ async function buildData(entries, word){
   });
 
   return {
-    word:first.word || word, phonetic, audio,
-    groups:posList,
+    word:built[0]?.word || word,
+    entries:built,
+    totalSenses:allDefs.size,
     synonyms:synonyms.slice(0, 12),
     antonyms:antonyms.slice(0, 10)
   };
@@ -365,57 +398,100 @@ function renderChips(words, type, slot){
   ).join("") + '</div>';
 }
 
+const VISIBLE_DEFS = 4;
+
+function overviewHTML(byPos){
+  const groups = Object.entries(byPos);
+  if(!groups.length) return '<span class="empty">暫無中文對應資料。</span>';
+  return groups.map(([pos, rows]) => `
+    <div class="ov-group"><span class="pos">${escapeHTML(POS_ZH[pos] || pos)}</span>
+      ${rows.map(r => `<div class="ov-row"><b>${escapeHTML(r.zh)}</b>${r.backs.length ? `<span>${escapeHTML(r.backs.slice(0, 4).join(", "))}</span>` : ""}</div>`).join("")}
+    </div>`).join("");
+}
+
 async function render(data, note, version){
   const items = [];
-  let counter = 0;
-  const slot = text => { const id = "tr-" + (counter++); items.push({ id, text }); return id; };
+  const lazy = {};
+  let counter = 0, sense = 0;
+  const slot = (text, bucket = items) => { const id = "tr-" + (counter++); bucket.push({ id, text }); return id; };
 
-  const meaningsHTML = data.groups.map((group, gi) => `
-    <div class="meaning">
-      <div><span class="pos">${escapeHTML(POS_ZH[group.pos] || group.pos || "其他")}</span><span class="pos-zh" id="gloss-${gi}"></span></div>
-      ${group.defs.map(def => `
-        <div class="def-item">
-          <div class="definition">${escapeHTML(def.definition)}</div>
-          <div class="definition-zh" id="${slot(def.definition)}" data-fallback="中文翻譯暫時無法取得">正在翻譯…</div>
-          ${def.example ? `<div class="example">${escapeHTML(def.example)}<span class="example-zh" id="${slot(def.example)}"></span></div>` : ""}
-        </div>`).join("")}
-    </div>`).join("");
+  const defHTML = (def, bucket) => {
+    sense++;
+    return `
+      <div class="def-item">
+        <div class="definition"><span class="sense-no">${sense}</span>${escapeHTML(def.definition)}</div>
+        <div class="definition-zh" id="${slot(def.definition, bucket)}" data-fallback="中文翻譯暫時無法取得">${bucket === items ? "正在翻譯…" : ""}</div>
+        ${def.example ? `<div class="example">${escapeHTML(def.example)}<span class="example-zh" id="${slot(def.example, bucket)}"></span></div>` : ""}
+      </div>`;
+  };
 
-  const synHTML = renderChips(data.synonyms, "", slot);
-  const antHTML = renderChips(data.antonyms, "ant", slot);
+  const entriesHTML = data.entries.map((entry, ei) => {
+    const head = data.entries.length > 1 ? `
+      <div class="entry-head">
+        <span class="entry-letter">${String.fromCharCode(65 + ei)}</span>
+        <span class="entry-word">${escapeHTML(entry.word)}</span>
+        ${entry.phonetic ? `<span class="entry-ph">${escapeHTML(entry.phonetic)}</span>` : ""}
+        <button class="mini-sp" data-entry="${ei}" aria-label="播放 ${escapeHTML(entry.word)} 發音" title="播放發音">🔊</button>
+      </div>` : "";
+    const groupsHTML = entry.groups.map(group => {
+      const shown = group.defs.slice(0, VISIBLE_DEFS);
+      const rest = group.defs.slice(VISIBLE_DEFS);
+      const key = "more-" + ei + "-" + group.pos;
+      lazy[key] = [];
+      return `
+        <div class="meaning">
+          <div><span class="pos">${escapeHTML(POS_ZH[group.pos] || group.pos || "其他")}</span><span class="pos-zh" data-pos="${escapeHTML(group.pos)}"></span></div>
+          ${shown.map(def => defHTML(def, items)).join("")}
+          ${rest.length ? `<div class="more" id="${key}" hidden>${rest.map(def => defHTML(def, lazy[key])).join("")}</div>
+            <button class="more-btn" data-more="${key}">展開其餘 ${rest.length} 個詞義 ▾</button>` : ""}
+        </div>`;
+    }).join("");
+    return `<div class="entry">${head}${groupsHTML}</div>`;
+  }).join("");
+
+  const posCount = new Set(data.entries.flatMap(e => e.groups.map(g => g.pos))).size;
+  const first = data.entries[0];
 
   $("result").innerHTML = `
     ${note ? `<div class="notice">${escapeHTML(note)}</div>` : ""}
-    <section class="result-card word-card">
-      <div class="word-top">
-        <div>
-          <div class="word">${escapeHTML(data.word)}</div>
-          <div class="translation" id="wordTranslation">正在翻譯…</div>
-          <div class="phonetic">${data.phonetic ? "音標：" + escapeHTML(data.phonetic) : "暫無音標資料"}</div>
+    <div class="layout">
+      <section class="result-card word-card a-word">
+        <div class="word-top">
+          <div>
+            <div class="word">${escapeHTML(data.word)}</div>
+            <div class="translation" id="wordTranslation">正在翻譯…</div>
+            <div class="phonetic">${first?.phonetic ? "音標：" + escapeHTML(first.phonetic) : "暫無音標資料"}</div>
+            <span class="badge">共 ${data.totalSenses} 個詞義 · ${posCount} 種詞性${data.entries.length > 1 ? " · " + data.entries.length + " 個條目" : ""}</span>
+          </div>
+          <div class="actions">
+            <button class="icon-btn" id="speakWord" aria-label="播放單字發音" title="播放發音">🔊</button>
+            <button class="icon-btn" id="copyWord" aria-label="複製單字" title="複製單字">⧉</button>
+          </div>
         </div>
-        <div class="actions">
-          <button class="icon-btn" id="speakWord" aria-label="播放單字發音" title="播放發音">🔊</button>
-          <button class="icon-btn" id="copyWord" aria-label="複製單字" title="複製單字">⧉</button>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="result-card">
-      <h2 class="card-title"><span class="dot"></span> DEFINITIONS · 詞性、解釋與例句</h2>
-      ${meaningsHTML || '<span class="empty">目前沒有英文解釋資料。</span>'}
-    </section>
+      <section class="result-card a-ov">
+        <h2 class="card-title"><span class="dot"></span> POLYSEMY · 一詞多義（中文對應）</h2>
+        <div id="overview"><span class="empty">正在翻譯…</span></div>
+      </section>
 
-    <section class="result-card">
-      <h2 class="card-title"><span class="dot"></span> SYNONYMS · 同義詞</h2>
-      ${synHTML}
-    </section>
+      <section class="result-card a-senses">
+        <h2 class="card-title"><span class="dot"></span> DEFINITIONS · 全部詞義、解釋與例句</h2>
+        ${entriesHTML || '<span class="empty">目前沒有英文解釋資料。</span>'}
+      </section>
 
-    <section class="result-card">
-      <h2 class="card-title"><span class="dot" style="background:#c47d70"></span> ANTONYMS · 反義詞</h2>
-      ${antHTML}
-    </section>`;
+      <section class="result-card a-syn">
+        <h2 class="card-title"><span class="dot"></span> SYNONYMS · 同義詞</h2>
+        ${renderChips(data.synonyms, "", slot)}
+      </section>
 
-  $("speakWord").addEventListener("click", () => playAudio(data.word, data.audio));
+      <section class="result-card a-ant">
+        <h2 class="card-title"><span class="dot" style="background:#c47d70"></span> ANTONYMS · 反義詞</h2>
+        ${renderChips(data.antonyms, "ant", slot)}
+      </section>
+    </div>`;
+
+  $("speakWord").addEventListener("click", () => playAudio(data.word, first?.audio));
   $("copyWord").addEventListener("click", async () => {
     try{
       await navigator.clipboard.writeText(data.word);
@@ -425,25 +501,39 @@ async function render(data, note, version){
       alert("無法自動複製，請手動選取單字。");
     }
   });
-  $("result").querySelectorAll("[data-word]").forEach(button => {
+  const root = $("result");
+  root.querySelectorAll("[data-word]").forEach(button => {
     button.addEventListener("click", () => searchWord(button.dataset.word));
+  });
+  root.querySelectorAll("[data-entry]").forEach(button => {
+    const entry = data.entries[Number(button.dataset.entry)];
+    button.addEventListener("click", () => playAudio(entry.word, entry.audio));
+  });
+  root.querySelectorAll("[data-more]").forEach(button => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.more;
+      $(key).hidden = false;
+      button.remove();
+      $(key).querySelectorAll(".definition-zh").forEach(el => el.textContent = "正在翻譯…");
+      translateAll(lazy[key], version);
+    });
   });
 
   const wordJob = translateWord(data.word).then(tr => {
     if(version !== searchVersion) return;
-    const firstGloss = Object.values(tr.byPos)[0]?.[0] || "";
+    const firstGloss = Object.values(tr.byPos)[0]?.[0]?.zh || "";
     $("wordTranslation").textContent = tr.main || firstGloss || "暫無中文翻譯";
-    data.groups.forEach((group, gi) => {
-      const words = tr.byPos[group.pos];
-      const el = $("gloss-" + gi);
-      if(el && words) el.textContent = words.join("、");
+    $("overview").innerHTML = overviewHTML(tr.byPos);
+    root.querySelectorAll(".pos-zh[data-pos]").forEach(el => {
+      const rows = tr.byPos[el.dataset.pos];
+      if(rows) el.textContent = rows.slice(0, 4).map(r => r.zh).join("、");
     });
   });
   await Promise.all([wordJob, translateAll(items, version)]);
 }
 
 async function searchWord(raw){
-  const word = String(raw || "").trim().replace(/\s+/g, " ").replace(/[^a-zA-Z'\- ]/g, "").trim().toLowerCase();
+  const word = String(raw || "").trim().replace(/\s+/g, " ").replace(/[^\p{L}'\- ]/gu, "").trim().toLowerCase();
   if(!word){ $("wordInput").focus(); return; }
   const version = ++searchVersion;
   $("wordInput").value = word;
