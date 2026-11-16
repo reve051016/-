@@ -32,11 +32,11 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .primary:disabled{opacity:.55;cursor:wait;transform:none}
 .hint{margin-top:11px;color:#a09689;font-size:12px}
 #result{margin-top:28px}
-.layout{display:grid;gap:0 20px;grid-template-columns:minmax(300px,380px) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:"word senses" "ov senses" "syn senses" "ant senses" "fill senses";align-items:start}
-.a-word{grid-area:word}.a-ov{grid-area:ov}.a-syn{grid-area:syn}.a-ant{grid-area:ant}.a-senses{grid-area:senses}
+.layout{display:grid;gap:0 20px;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"main ov" "main senses";align-items:start}
+.a-main{grid-area:main}.a-ov{grid-area:ov}.a-senses{grid-area:senses}
 .layout .result-card{margin-top:14px}
-.layout .a-word{margin-top:0}.layout .a-senses{margin-top:14px}
-@media(max-width:900px){.shell{max-width:850px}.layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"word" "ov" "senses" "syn" "ant"}}
+.layout .a-main,.layout .a-ov{margin-top:0}
+@media(max-width:900px){.shell{max-width:850px}.layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"main" "ov" "senses"}.layout .a-ov{margin-top:14px}}
 .message{padding:28px 18px;text-align:center;color:var(--muted);background:#fffaf4;border:1px dashed #e6d8c9;border-radius:16px;font-size:14px}
 .message.error{color:var(--rose-text);background:var(--rose);border-color:#efd2c9}
 .message .chips{justify-content:center;margin-top:14px}
@@ -67,6 +67,28 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .chip.ant{background:var(--rose);color:var(--rose-text)}
 .chip:hover{filter:brightness(.97);transform:translateY(-1px)}
 .empty{color:var(--muted);font-size:13px}
+.study-card{padding:28px}
+.study-card .word{font:800 clamp(36px,7vw,50px)/1.15 system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC",sans-serif;letter-spacing:-.02em}
+.sc-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;color:var(--muted);font-size:14px}
+.sc-meta .badge{margin-top:0}
+.posabbr{display:inline-block;color:var(--accent-dark);font-size:12.5px;font-weight:700;font-style:italic;opacity:.9}
+.sc-block{margin-top:22px}
+.sc-label{margin:0 0 10px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.14em}
+.cn-line{display:flex;gap:12px;align-items:baseline;margin-top:7px}
+.cn-line .posabbr{min-width:38px}
+.cn-zh{font-size:20px;font-weight:700;line-height:1.4}
+.chunk{display:inline-block;padding:6px 12px;border-radius:10px;background:#f3ede3;border:1px solid var(--line);font-size:13.5px;font-weight:600}
+.chunk small{display:block;margin-top:1px;font-size:11.5px;font-weight:500;color:var(--muted);min-height:1.1em}
+.ex-item{padding:11px 0;border-top:1px solid var(--line)}
+.ex-item:first-of-type{padding-top:0;border-top:0}
+.ex-en{font-size:15.5px;line-height:1.55}
+.ex-en b{color:var(--accent-dark);font-weight:800}
+.ex-zh{margin-top:2px;color:var(--muted);font-size:13px}
+.sc-extra{margin:24px 0 0 14px;padding:15px 17px;border-radius:14px;background:#f8f1e8;border:1px solid var(--line)}
+.ex-row+.ex-row{margin-top:14px}
+.ex-label{margin-bottom:8px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.12em}
+.sc-extra .chip{padding:5px 10px;font-size:12.5px}
+.chip.der{background:#efe8dd;color:#6a5a48}
 .badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--accent-dark);font-size:11px;font-weight:800}
 .ov-group{padding:11px 0;border-top:1px solid var(--line)}
 .ov-group:first-child{padding-top:0;border-top:0}
@@ -93,7 +115,7 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .skeleton{height:13px;max-width:360px;margin:9px auto;background:linear-gradient(90deg,#eee7dd,#faf6f0,#eee7dd);background-size:200% 100%;border-radius:9px;animation:shine 1.2s infinite}
 @keyframes shine{to{background-position:-200% 0}}
 .footer{text-align:center;color:#a99e91;font-size:11px;margin-top:44px}
-@media(max-width:600px){.shell{padding:25px 15px 48px}.brand{margin-bottom:39px}.hero p{font-size:13px}.searchbar{gap:5px}.search-icon{padding-left:7px}.primary{padding:0 15px}.result-card{padding:18px}.word-card{padding:22px}}
+@media(max-width:600px){.shell{padding:25px 15px 48px}.brand{margin-bottom:39px}.hero p{font-size:13px}.searchbar{gap:5px}.search-icon{padding-left:7px}.primary{padding:0 15px}.result-card{padding:18px}.word-card,.study-card{padding:22px}.sc-extra{margin-left:6px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -133,6 +155,10 @@ const POS_ZH = {
   interjection:"感嘆詞",exclamation:"感嘆詞",determiner:"限定詞"
 };
 const POS_TAG = { noun:"n", verb:"v", adjective:"adj", adverb:"adv" };
+const POS_ABBR = { noun:"n.", verb:"v.", adjective:"adj.", adverb:"adv.", pronoun:"pron.", preposition:"prep.", conjunction:"conj.", interjection:"interj.", exclamation:"excl.", determiner:"det." };
+const STOP = new Set("the a an of to in on at for with and or but is are was were be been it its this that these those i you he she we they my your his her our their as by from not no so if than then there here who which what will would can could should do does did have has had very more most also just too all any some up out off into about me him them us".split(" "));
+const DERIV_SUFFIX = /^(s|es|d|ed|ing|er|ers|est|ly|ily|ness|iness|ment|ments|ion|ions|tion|tions|ation|ations|ity|ities|able|ably|ible|al|ally|ful|fully|less|ive|ively|ize|ized|izing|ous|ously|y|ies|ied|ier|iest|ption|ptions|ptive|ition)$/;
+const INFLECTION = /^(s|es|d|ed|ing|ies|ied)$/;
 
 let searchVersion = 0;
 let activeAudio = null;
@@ -225,12 +251,18 @@ function makeChunks(items, maxChars = 1400, maxItems = 12){
 }
 
 async function translateAll(items, version){
-  await Promise.all(makeChunks(items).map(async chunk => {
-    const results = await translateChunk(chunk.map(item => item.text.replace(/\s+/g, " ")));
+  const norm = text => text.replace(/\s+/g, " ");
+  const unique = [...new Set(items.map(item => norm(item.text)))];
+  const done = new Map();
+  await Promise.all(makeChunks(unique.map(text => ({ text }))).map(async chunk => {
+    const results = await translateChunk(chunk.map(item => item.text));
+    chunk.forEach((item, i) => done.set(item.text, results[i]));
     if(version !== searchVersion) return;
-    chunk.forEach((item, i) => {
+    items.forEach(item => {
+      const key = norm(item.text);
+      if(!done.has(key)) return;
       const el = $(item.id);
-      if(el) el.textContent = results[i] || el.dataset.fallback || "";
+      if(el) el.textContent = done.get(key) || el.dataset.fallback || "";
     });
   }));
 }
@@ -319,6 +351,41 @@ function pushUnique(target, seen, word){
   if(word && !seen.has(word)){ seen.add(word); target.push(word); }
 }
 
+function highlight(text, word){
+  const html = escapeHTML(text);
+  const stem = (word.length > 4 ? word.replace(/(e|y)$/, "") : word).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  try{ return html.replace(new RegExp("\\b(" + stem + "[a-z]*)", "gi"), "<b>$1</b>"); }
+  catch{ return html; }
+}
+
+function buildCollocations(word, followers, predecessors){
+  const pick = list => (Array.isArray(list) ? list : []).map(item => {
+    const w = cleanWord(item.word);
+    return w && !STOP.has(w) && w.length > 2 && !w.includes(" ") && tagInfo(item).freq >= 0.5 ? w : "";
+  }).filter(Boolean).slice(0, 5);
+  const before = pick(predecessors).map(w => `${w} ${word}`);
+  const after = pick(followers).map(w => `${word} ${w}`);
+  return [...new Set([...before, ...after])].slice(0, 8);
+}
+
+function buildDerivatives(word, list){
+  if(/[\s-]/.test(word)) return [];
+  const stem = word.replace(/(e|y)$/, "");
+  const found = (Array.isArray(list) ? list : []).map(item => ({ w:String(item.word || "").toLowerCase(), f:tagInfo(item).freq }))
+    .filter(x => /^[a-z]+$/.test(x.w) && x.w !== word && x.w.startsWith(stem) && DERIV_SUFFIX.test(x.w.slice(stem.length)) && x.f >= 0.3);
+  const derivational = found.filter(x => !INFLECTION.test(x.w.slice(stem.length)));
+  const inflected = found.filter(x => INFLECTION.test(x.w.slice(stem.length)));
+  return [...derivational, ...inflected].map(x => x.w).slice(0, 6);
+}
+
+function pickExamples(entries){
+  const all = [];
+  entries.forEach(e => e.groups.forEach(g => g.defs.forEach(d => { if(d.example) all.push(d.example.trim()); })));
+  const unique = [...new Set(all)];
+  const short = unique.filter(t => t.length <= 110);
+  return (short.length ? short : unique).slice(0, 3);
+}
+
 async function buildData(entries, word){
   const dictSyn = [], dictAnt = [];
   const allDefs = new Set();
@@ -355,9 +422,13 @@ async function buildData(entries, word){
   built.forEach(e => e.groups.forEach(g => { if(POS_TAG[g.pos]) posTags.add(POS_TAG[g.pos]); }));
   const encoded = encodeURIComponent(word);
 
-  const [synData, antData] = await Promise.all([
+  const stem = word.replace(/(e|y)$/, "");
+  const [synData, antData, bga, bgb, derData] = await Promise.all([
     getJSON(MUSE + "words?rel_syn=" + encoded + "&md=pf&max=40").catch(() => []),
-    getJSON(MUSE + "words?rel_ant=" + encoded + "&md=pf&max=20").catch(() => [])
+    getJSON(MUSE + "words?rel_ant=" + encoded + "&md=pf&max=20").catch(() => []),
+    getJSON(MUSE + "words?rel_bga=" + encoded + "&md=pf&max=25").catch(() => []),
+    getJSON(MUSE + "words?rel_bgb=" + encoded + "&md=pf&max=25").catch(() => []),
+    stem.length >= 3 && !/[\s-]/.test(word) ? getJSON(MUSE + "words?sp=" + encodeURIComponent(stem) + "*&md=f&max=40").catch(() => []) : Promise.resolve([])
   ]);
 
   const samePos = info => !posTags.size || !info.pos.length || info.pos.some(t => posTags.has(t));
@@ -382,7 +453,10 @@ async function buildData(entries, word){
     entries:built,
     totalSenses:allDefs.size,
     synonyms:synonyms.slice(0, 12),
-    antonyms:antonyms.slice(0, 10)
+    antonyms:antonyms.slice(0, 10),
+    collocations:buildCollocations(word, bga, bgb),
+    derivatives:buildDerivatives(word, derData),
+    examples:pickExamples(built)
   };
 }
 
@@ -430,6 +504,14 @@ function overviewHTML(byPos){
   }).join("");
 }
 
+function cnDefHTML(tr){
+  const lines = Object.entries(tr.byPos).map(([pos, rows]) => {
+    const zh = rows.filter(r => !r.rare).slice(0, 3).map(r => r.zh).join("、");
+    return zh ? `<div class="cn-line"><span class="posabbr">${escapeHTML(POS_ABBR[pos] || pos)}</span><span class="cn-zh">${escapeHTML(zh)}</span></div>` : "";
+  }).join("");
+  return lines || `<div class="cn-line"><span class="cn-zh">${escapeHTML(tr.main || "暫無中文翻譯")}</span></div>`;
+}
+
 async function render(data, note, version){
   const items = [];
   const lazy = {};
@@ -470,25 +552,47 @@ async function render(data, note, version){
     return `<div class="entry">${head}${groupsHTML}</div>`;
   }).join("");
 
-  const posCount = new Set(data.entries.flatMap(e => e.groups.map(g => g.pos))).size;
   const first = data.entries[0];
+  const posList = [...new Set(data.entries.flatMap(e => e.groups.map(g => g.pos)))];
+  const posCount = posList.length;
+
+  const collocHTML = data.collocations.length
+    ? `<div class="chips">${data.collocations.map(text => `<span class="chunk">${escapeHTML(text)}<small id="${slot(text)}"></small></span>`).join("")}</div>` : "";
+  const exampleHTML = data.examples.length
+    ? data.examples.map(text => `<div class="ex-item"><div class="ex-en">${highlight(text, data.word)}</div><div class="ex-zh" id="${slot(text)}"></div></div>`).join("") : "";
+  const extraRows = [
+    ["衍生字", data.derivatives, "der"],
+    ["同義詞", data.synonyms, ""],
+    ["反義詞", data.antonyms, "ant"]
+  ].filter(row => row[1].length).map(([label, list, type]) =>
+    `<div class="ex-row"><div class="ex-label">${label}</div>${renderChips(list, type, slot)}</div>`).join("");
 
   $("result").innerHTML = `
     ${note ? `<div class="notice">${escapeHTML(note)}</div>` : ""}
     <div class="layout">
-      <section class="result-card word-card a-word">
+      <section class="result-card study-card a-main">
         <div class="word-top">
           <div>
             <div class="word">${escapeHTML(data.word)}</div>
-            <div class="translation" id="wordTranslation">正在翻譯…</div>
-            <div class="phonetic">${first?.phonetic ? "音標：" + escapeHTML(first.phonetic) : "暫無音標資料"}</div>
-            <span class="badge">共 ${data.totalSenses} 個詞義 · ${posCount} 種詞性${data.entries.length > 1 ? " · " + data.entries.length + " 個條目" : ""}</span>
+            <div class="sc-meta">
+              ${first?.phonetic ? `<span class="phon">${escapeHTML(first.phonetic)}</span>` : ""}
+              ${posList.map(p => `<span class="posabbr">${escapeHTML(POS_ABBR[p] || p)}</span>`).join("")}
+              <span class="badge">${data.totalSenses} 個詞義${data.entries.length > 1 ? " · " + data.entries.length + " 個條目" : ""}</span>
+            </div>
           </div>
           <div class="actions">
             <button class="icon-btn" id="speakWord" aria-label="播放單字發音" title="播放發音">🔊</button>
             <button class="icon-btn" id="copyWord" aria-label="複製單字" title="複製單字">⧉</button>
           </div>
         </div>
+
+        <div class="sc-block">
+          <h3 class="sc-label">中文釋義</h3>
+          <div id="cnDef"><span class="empty">正在翻譯…</span></div>
+        </div>
+        ${collocHTML ? `<div class="sc-block"><h3 class="sc-label">搭配詞與片語</h3>${collocHTML}</div>` : ""}
+        ${exampleHTML ? `<div class="sc-block"><h3 class="sc-label">情境例句</h3>${exampleHTML}</div>` : ""}
+        ${extraRows ? `<div class="sc-extra">${extraRows}</div>` : ""}
       </section>
 
       <section class="result-card a-ov">
@@ -499,16 +603,6 @@ async function render(data, note, version){
       <section class="result-card a-senses">
         <h2 class="card-title"><span class="dot"></span> DEFINITIONS · 全部詞義、解釋與例句</h2>
         ${entriesHTML || '<span class="empty">目前沒有英文解釋資料。</span>'}
-      </section>
-
-      <section class="result-card a-syn">
-        <h2 class="card-title"><span class="dot"></span> SYNONYMS · 同義詞</h2>
-        ${renderChips(data.synonyms, "", slot)}
-      </section>
-
-      <section class="result-card a-ant">
-        <h2 class="card-title"><span class="dot" style="background:#c47d70"></span> ANTONYMS · 反義詞</h2>
-        ${renderChips(data.antonyms, "ant", slot)}
       </section>
     </div>`;
 
@@ -542,8 +636,7 @@ async function render(data, note, version){
 
   const wordJob = translateWord(data.word).then(tr => {
     if(version !== searchVersion) return;
-    const firstGloss = Object.values(tr.byPos)[0]?.[0]?.zh || "";
-    $("wordTranslation").textContent = tr.main || firstGloss || "暫無中文翻譯";
+    $("cnDef").innerHTML = cnDefHTML(tr);
     $("overview").innerHTML = overviewHTML(tr.byPos);
     $("overview").querySelectorAll("[data-rare]").forEach(button => {
       button.addEventListener("click", () => {
