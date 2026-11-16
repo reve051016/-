@@ -70,9 +70,14 @@ h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacin
 .badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--accent-dark);font-size:11px;font-weight:800}
 .ov-group{padding:11px 0;border-top:1px solid var(--line)}
 .ov-group:first-child{padding-top:0;border-top:0}
-.ov-row{display:flex;align-items:baseline;gap:9px;margin-top:7px;flex-wrap:wrap}
+.ov-row{display:flex;align-items:baseline;gap:3px 9px;margin-top:9px;flex-wrap:wrap}
 .ov-row b{font-size:15px}
 .ov-row span{color:var(--muted);font-size:12px}
+.ov-bar{flex:0 0 100%;height:3px;border-radius:3px;background:var(--line);overflow:hidden}
+.ov-bar i{display:block;height:100%;background:var(--accent);opacity:.5}
+.ov-rare{margin-top:2px}
+.ov-rare[hidden]{display:none}
+.ov-rare .ov-row b{font-size:13px;color:var(--muted)}
 .entry{padding:4px 0 2px}
 .entry+.entry{margin-top:18px;padding-top:18px;border-top:2px solid var(--line)}
 .entry-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}
@@ -163,11 +168,21 @@ async function translateWord(word){
     (data[1] || []).forEach(group => {
       const name = group?.[0];
       const raw = Array.isArray(group?.[2]) && group[2].length ? group[2] : (group?.[1] || []).map(z => [z, [], 0]);
-      const rows = raw.slice(0, 6).map(r => ({
+      const rows = raw.slice(0, 12).map(r => ({
         zh:String(r?.[0] || ""),
         backs:(r?.[1] || []).filter(b => typeof b === "string"),
         score:Number(r?.[2]) || 0
       })).filter(r => r.zh);
+      /* 依常用度由高到低排序；分數過低的冷僻譯詞（如單字的古字、異體字）標為「較少見」 */
+      rows.sort((a, b) => b.score - a.score);
+      const top = rows[0]?.score || 0;
+      rows.forEach((r, i) => {
+        r.share = top > 0 ? r.score / top : 0;
+        r.rare = top > 0
+          ? (i >= 5 || r.share < 0.12 || (r.zh.length === 1 && r.share < 0.35 && i >= 2))
+          : i >= 4;
+      });
+      if(rows.length) rows[0].rare = false;
       if(name && rows.length) out.byPos[name] = rows;
     });
   }catch{}
@@ -403,10 +418,16 @@ const VISIBLE_DEFS = 4;
 function overviewHTML(byPos){
   const groups = Object.entries(byPos);
   if(!groups.length) return '<span class="empty">暫無中文對應資料。</span>';
-  return groups.map(([pos, rows]) => `
+  const row = r => `<div class="ov-row"><b>${escapeHTML(r.zh)}</b>${r.backs.length ? `<span>${escapeHTML(r.backs.slice(0, 3).join(", "))}</span>` : ""}${r.share > 0 ? `<div class="ov-bar" title="相對常用度"><i style="width:${Math.max(6, Math.round(r.share * 100))}%"></i></div>` : ""}</div>`;
+  return groups.map(([pos, rows]) => {
+    const main = rows.filter(r => !r.rare);
+    const rare = rows.filter(r => r.rare);
+    return `
     <div class="ov-group"><span class="pos">${escapeHTML(POS_ZH[pos] || pos)}</span>
-      ${rows.map(r => `<div class="ov-row"><b>${escapeHTML(r.zh)}</b>${r.backs.length ? `<span>${escapeHTML(r.backs.slice(0, 4).join(", "))}</span>` : ""}</div>`).join("")}
-    </div>`).join("");
+      ${main.map(row).join("")}
+      ${rare.length ? `<button class="more-btn" data-rare>較少見的譯法（${rare.length}）▾</button><div class="ov-rare" hidden>${rare.map(row).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
 }
 
 async function render(data, note, version){
@@ -524,9 +545,15 @@ async function render(data, note, version){
     const firstGloss = Object.values(tr.byPos)[0]?.[0]?.zh || "";
     $("wordTranslation").textContent = tr.main || firstGloss || "暫無中文翻譯";
     $("overview").innerHTML = overviewHTML(tr.byPos);
+    $("overview").querySelectorAll("[data-rare]").forEach(button => {
+      button.addEventListener("click", () => {
+        button.nextElementSibling.hidden = false;
+        button.remove();
+      });
+    });
     root.querySelectorAll(".pos-zh[data-pos]").forEach(el => {
       const rows = tr.byPos[el.dataset.pos];
-      if(rows) el.textContent = rows.slice(0, 4).map(r => r.zh).join("、");
+      if(rows) el.textContent = rows.filter(r => !r.rare).slice(0, 3).map(r => r.zh).join("、");
     });
   });
   await Promise.all([wordJob, translateAll(items, version)]);
