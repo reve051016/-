@@ -1,691 +1,119 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f6f2eb">
-<title>單字探索器｜Word Dictionary</title>
+<title>My Vocabulary Quiz</title>
 <style>
-:root{
-  --bg:#f6f2eb;--paper:#fffdf9;--card:#fffefa;--text:#302a24;--muted:#8b8175;
-  --line:#eae2d7;--accent:#b96d49;--accent-dark:#985438;--soft:#f4e7dc;
-  --green:#eaf2e8;--green-text:#426b48;--rose:#f8eae5;--rose-text:#9c5142;
-  --shadow:0 12px 34px rgba(76,53,31,.07);color-scheme:light
-}
+:root{--bg:#FAF8F3;--sage:#A8C3A0;--sage-d:#8DAE85;--mist:#B8CCD9;--card:#FFFFFF;--text:#555555;--muted:#8a8a8a;--ok:#E4F0DF;--ok-b:#A8C3A0;--bad:#F4DEDE;--bad-b:#DDA9A9;--line:#ECE8DF;--shadow:0 8px 28px rgba(120,130,110,.12);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a2d29;--card:#353a34;--text:#e6e6e0;--muted:#aaa;--ok:#3c4d38;--bad:#53393a;--line:#454b43;--shadow:0 8px 28px rgba(0,0,0,.3);color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0%,rgba(185,109,73,.10),transparent 28rem),var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC",sans-serif;line-height:1.65}
-button,input{font:inherit}button{cursor:pointer}
-.shell{max-width:1100px;margin:auto;padding:38px 24px 64px}
-.brand{display:flex;align-items:center;gap:11px;margin-bottom:54px;font-weight:800;letter-spacing:.05em;font-size:13px}
-.brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:var(--accent);color:white;font:700 22px Georgia,serif;box-shadow:0 6px 16px #b96d4933}
-.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.19em}
-.hero{text-align:center;margin:0 auto 28px}
-.eyebrow{display:inline-block;padding:5px 12px;border:1px solid #e8d8c9;border-radius:99px;background:#fff9f2;color:var(--accent-dark);font-size:10px;font-weight:800;letter-spacing:.15em}
-h1{font:700 clamp(34px,6vw,48px)/1.2 Georgia,"Noto Serif TC",serif;letter-spacing:-.04em;margin:17px 0 10px}
-.hero p{margin:0;color:var(--muted);font-size:14px}
-.searchbar{display:flex;gap:9px;max-width:660px;margin:26px auto 0;padding:8px;background:var(--paper);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}
-.search-icon{display:grid;place-items:center;padding-left:12px;color:#a99a89;font-size:21px}
-.searchbar input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:10px 4px;color:var(--text);font-size:16px}
-.searchbar input::placeholder{color:#b3a99d}
-.primary{border:0;border-radius:11px;background:var(--accent);color:white;padding:0 22px;font-weight:750;transition:.2s}
-.primary:hover{background:var(--accent-dark);transform:translateY(-1px)}
-.primary:disabled{opacity:.55;cursor:wait;transform:none}
-.hint{margin-top:11px;color:#a09689;font-size:12px}
-#result{margin-top:28px}
-.layout{display:grid;gap:0 20px;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"main ov" "main senses";align-items:start}
-.a-main{grid-area:main}.a-ov{grid-area:ov}.a-senses{grid-area:senses}
-.layout .result-card{margin-top:14px}
-.layout .a-main,.layout .a-ov{margin-top:0}
-@media(max-width:900px){.shell{max-width:850px}.layout{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"main" "ov" "senses"}.layout .a-ov{margin-top:14px}}
-.message{padding:28px 18px;text-align:center;color:var(--muted);background:#fffaf4;border:1px dashed #e6d8c9;border-radius:16px;font-size:14px}
-.message.error{color:var(--rose-text);background:var(--rose);border-color:#efd2c9}
-.message .chips{justify-content:center;margin-top:14px}
-.notice{margin-bottom:12px;padding:9px 13px;border-radius:11px;background:#fff6e8;border:1px solid #f0dfc2;color:#8a6a35;font-size:12.5px}
-.result-card{background:var(--card);border:1px solid var(--line);border-radius:19px;padding:23px;margin-top:14px;box-shadow:0 7px 22px rgba(76,53,31,.035)}
-.word-card{padding:28px}
-.word-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
-.word{font:700 clamp(35px,7vw,47px)/1.2 Georgia,serif;letter-spacing:-.04em;overflow-wrap:anywhere}
-.translation{margin-top:8px;color:var(--accent);font-size:18px;font-weight:750;min-height:1.5em}
-.phonetic{margin-top:7px;color:var(--muted);font-size:13px}
-.actions{display:flex;gap:8px}
-.icon-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:#faf5ee;color:var(--accent-dark);font-size:17px}
-.icon-btn:hover{background:var(--soft)}
-.card-title{display:flex;align-items:center;gap:9px;margin:0 0 15px;color:var(--muted);font-size:11px;font-weight:850;letter-spacing:.14em}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
-.meaning{padding:15px 0;border-top:1px solid var(--line)}
-.meaning:first-child{padding-top:0;border-top:0}
-.pos{display:inline-block;padding:2px 8px;border-radius:7px;background:var(--soft);color:var(--accent-dark);font-size:11px;font-weight:800}
-.pos-zh{margin-left:9px;color:var(--accent-dark);font-size:13px;font-weight:700}
-.def-item{margin-top:11px}
-.definition{font-size:14px}
-.definition-zh{margin-top:3px;color:var(--muted);font-size:13px}
-.example{margin-top:8px;padding:9px 12px;border-left:2px solid #d9b39b;background:#fbf7f1;border-radius:0 9px 9px 0;font-size:13px}
-.example-zh{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-.chips{display:flex;flex-wrap:wrap;gap:9px}
-.chip{border:0;border-radius:10px;background:var(--green);color:var(--green-text);padding:7px 12px;font-size:13px;font-weight:700;text-align:left}
-.chip small{display:block;font-size:11px;font-weight:600;opacity:.85;min-height:1.1em}
-.chip.ant{background:var(--rose);color:var(--rose-text)}
-.chip:hover{filter:brightness(.97);transform:translateY(-1px)}
-.empty{color:var(--muted);font-size:13px}
-.study-card{padding:28px}
-.study-card .word{font:800 clamp(36px,7vw,50px)/1.15 system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC",sans-serif;letter-spacing:-.02em}
-.sc-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;color:var(--muted);font-size:14px}
-.sc-meta .badge{margin-top:0}
-.posabbr{display:inline-block;color:var(--accent-dark);font-size:12.5px;font-weight:700;font-style:italic;opacity:.9}
-.sc-block{margin-top:22px}
-.sc-label{margin:0 0 10px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.14em}
-.cn-line{display:flex;gap:12px;align-items:baseline;margin-top:7px}
-.cn-line .posabbr{min-width:38px}
-.cn-zh{font-size:20px;font-weight:700;line-height:1.4}
-.chunk{display:inline-block;padding:6px 12px;border-radius:10px;background:#f3ede3;border:1px solid var(--line);font-size:13.5px;font-weight:600}
-.chunk small{display:block;margin-top:1px;font-size:11.5px;font-weight:500;color:var(--muted);min-height:1.1em}
-.ex-item{padding:11px 0;border-top:1px solid var(--line)}
-.ex-item:first-of-type{padding-top:0;border-top:0}
-.ex-en{font-size:15.5px;line-height:1.55}
-.ex-en b{color:var(--accent-dark);font-weight:800}
-.ex-zh{margin-top:2px;color:var(--muted);font-size:13px}
-.sc-extra{margin:24px 0 0 14px;padding:15px 17px;border-radius:14px;background:#f8f1e8;border:1px solid var(--line)}
-.ex-row+.ex-row{margin-top:14px}
-.ex-label{margin-bottom:8px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.12em}
-.sc-extra .chip{padding:5px 10px;font-size:12.5px}
-.chip.der{background:#efe8dd;color:#6a5a48}
-.badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--accent-dark);font-size:11px;font-weight:800}
-.ov-group{padding:11px 0;border-top:1px solid var(--line)}
-.ov-group:first-child{padding-top:0;border-top:0}
-.ov-row{display:flex;align-items:baseline;gap:3px 9px;margin-top:9px;flex-wrap:wrap}
-.ov-row b{font-size:15px}
-.ov-row span{color:var(--muted);font-size:12px}
-.ov-bar{flex:0 0 100%;height:3px;border-radius:3px;background:var(--line);overflow:hidden}
-.ov-bar i{display:block;height:100%;background:var(--accent);opacity:.5}
-.ov-rare{margin-top:2px}
-.ov-rare[hidden]{display:none}
-.ov-rare .ov-row b{font-size:13px;color:var(--muted)}
-.entry{padding:4px 0 2px}
-.entry+.entry{margin-top:18px;padding-top:18px;border-top:2px solid var(--line)}
-.entry-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}
-.entry-letter{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--accent);color:#fff;font-size:12px;font-weight:800}
-.entry-word{font:700 20px Georgia,serif}
-.entry-ph{color:var(--muted);font-size:13px}
-.mini-sp{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:#faf5ee;color:var(--accent-dark);font-size:13px}
-.sense-no{display:inline-block;min-width:22px;margin-right:6px;color:var(--accent);font-weight:800;font-size:12px}
-.more{margin-top:2px}
-.more[hidden]{display:none}
-.more-btn{margin-top:12px;border:1px dashed #dcc7b5;border-radius:10px;background:#fff9f2;color:var(--accent-dark);padding:7px 14px;font-size:12.5px;font-weight:700}
-.loading{padding:30px 18px;text-align:center;color:var(--muted)}
-.skeleton{height:13px;max-width:360px;margin:9px auto;background:linear-gradient(90deg,#eee7dd,#faf6f0,#eee7dd);background-size:200% 100%;border-radius:9px;animation:shine 1.2s infinite}
-@keyframes shine{to{background-position:-200% 0}}
-.footer{text-align:center;color:#a99e91;font-size:11px;margin-top:44px}
-@media(max-width:600px){.shell{padding:25px 15px 48px}.brand{margin-bottom:39px}.hero p{font-size:13px}.searchbar{gap:5px}.search-icon{padding-left:7px}.primary{padding:0 15px}.result-card{padding:18px}.word-card,.study-card{padding:22px}.sc-extra{margin-left:6px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.6;min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:28px 18px 60px}
+.view{display:none;animation:fade .45s ease}.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+header{text-align:center;margin-bottom:22px}
+.logo{font-size:34px}
+h1{margin:4px 0 4px;font-size:30px;letter-spacing:.5px;font-family:Georgia,"Noto Serif TC",serif}
+.sub{color:var(--muted);margin:0}
+.card{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
+h2{font-size:17px;margin:0 0 10px}
+textarea{width:100%;min-height:150px;border:1.5px solid var(--line);border-radius:14px;padding:14px;font:inherit;background:var(--bg);color:var(--text);resize:vertical}
+textarea:focus{outline:none;border-color:var(--sage)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.count{background:var(--mist);color:#3f5565;padding:3px 12px;border-radius:99px;font-size:14px}
+.hint{font-size:13px;color:var(--muted)}
+.link{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{border:2px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;background:var(--card);text-align:left;font:inherit;color:var(--text);transition:.2s}
+.mode:hover{border-color:var(--mist);transform:translateY(-2px)}
+.mode.sel{border-color:var(--sage);background:var(--ok)}
+.mode b{display:block;font-size:16px}.mode span{font-size:13px;color:var(--muted)}
+.btn{border:none;border-radius:14px;padding:13px 22px;font:inherit;font-weight:600;cursor:pointer;transition:.2s;background:var(--sage);color:#fff}
+.btn:hover{background:var(--sage-d);transform:translateY(-2px);box-shadow:0 6px 14px rgba(120,150,110,.3)}
+.btn.alt{background:var(--mist);color:#3f5565}.btn.alt:hover{background:#a6bece;box-shadow:0 6px 14px rgba(100,130,150,.25)}
+.btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line)}.btn.ghost:hover{background:var(--bg);box-shadow:none}
+.btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
+.big{width:100%;font-size:17px;padding:15px}
+.msg{border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:14px;display:none}
+.msg.show{display:block}.msg.err{background:var(--bad)}.msg.warn{background:#F6EFD9;color:#6b5d2e}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sage),var(--mist));border-radius:99px;transition:width .4s}
+.q{text-align:center;padding:30px 18px}
+.q small{color:var(--muted)}.q .t{font-size:40px;font-weight:700;margin-top:6px;word-break:break-word}
+.opts{display:grid;gap:12px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:16px;padding:14px 16px;font:inherit;font-size:18px;cursor:pointer;transition:.2s}
+.opt:hover:not(:disabled){border-color:var(--sage);transform:translateY(-2px);box-shadow:var(--shadow)}
+.opt i{font-style:normal;width:30px;height:30px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:14px;flex:none}
+.opt:disabled{cursor:default}
+.opt.ok{background:var(--ok);border-color:var(--ok-b)}.opt.no{background:var(--bad);border-color:var(--bad-b)}
+.fb{margin-top:16px;border-radius:14px;padding:12px 16px;display:none;font-weight:600}
+.fb.ok{display:block;background:var(--ok)}.fb.no{display:block;background:var(--bad)}
+.score{text-align:center}.score .pct{font-size:56px;font-weight:700;color:var(--sage-d)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.stat{background:var(--bg);border-radius:14px;padding:12px}.stat b{display:block;font-size:24px}.stat span{font-size:13px;color:var(--muted)}
+.rec{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:12px;margin-bottom:8px;font-size:15px}
+.rec.ok{background:var(--ok)}.rec.no{background:var(--bad)}
+.rec .m{font-weight:700;flex:none}
+.acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chk{display:flex;gap:6px;align-items:center;font-size:14px;margin-bottom:12px}
+@media(max-width:520px){.modes{grid-template-columns:1fr}.q .t{font-size:32px}h1{font-size:25px}}
 </style>
 </head>
 <body>
-<div class="shell">
-  <header class="brand"><div class="brand-mark">W</div><div>WORD DICTIONARY<small>ENGLISH · CHINESE · PRONUNCIATION</small></div></header>
+<div class="wrap">
 
-  <section class="hero">
-    <span class="eyebrow">YOUR EVERYDAY ENGLISH DICTIONARY</span>
-    <h1>單字探索器</h1>
-    <p>查單字、看解釋、聽發音，讓每一次查詢都更有效率。</p>
-    <form class="searchbar" id="searchForm">
-      <span class="search-icon">⌕</span>
-      <input id="wordInput" type="search" placeholder="輸入英文單字，例如：beautiful" autocomplete="off" autocapitalize="none" spellcheck="false">
-      <button class="primary" id="searchButton" type="submit">查詢 ↗</button>
-    </form>
-    <div class="hint">例如：happy · improve · opportunity</div>
-  </section>
+<section id="home" class="view on">
+  <header><div class="logo">🌿📖</div><h1>My Vocabulary Quiz</h1><p class="sub">每天學一點英文，讓單字慢慢累積。</p></header>
+  <div id="homeMsg" class="msg"></div>
+  <div class="card">
+    <h2>① 輸入英文單字</h2>
+    <textarea id="words" placeholder="用逗號或換行分隔，例如：&#10;apple, book, happy, water, beautiful" spellcheck="false"></textarea>
+    <div class="row"><span class="count" id="count">0 個單字</span>
+      <span><button class="link" id="sample">填入範例</button> · <button class="link" id="clear">清空</button></span></div>
+    <p class="hint">至少需要 4 個單字。進階：也可自訂意思，如 <code>serendipity=機緣巧合</code>。</p>
+  </div>
+  <div class="card">
+    <h2>② 選擇測驗模式</h2>
+    <div class="modes">
+      <button class="mode sel" data-mode="zh2en"><b>中文 → 英文</b><span>看中文，選英文單字</span></button>
+      <button class="mode" data-mode="en2zh"><b>英文 → 中文</b><span>看英文，選中文意思</span></button>
+    </div>
+  </div>
+  <button class="btn big" id="start">開始測驗</button>
+</section>
 
-  <main id="result" aria-live="polite">
-    <div class="message">輸入英文單字，即可查看中文翻譯、詞性、英文解釋、例句、同義詞與反義詞。</div>
-  </main>
-  <footer class="footer">WORD DICTIONARY · A SIMPLE TOOL FOR DAILY LEARNING</footer>
+<section id="quiz" class="view">
+  <div id="quizMsg" class="msg warn"></div>
+  <div class="top"><b id="prog">1 / 10</b><button class="btn ghost" id="quitQuiz">返回首頁</button></div>
+  <div class="bar"><i id="barFill"></i></div>
+  <div class="card q"><small id="qLabel"></small><div class="t" id="qText"></div></div>
+  <div class="opts" id="opts"></div>
+  <div class="fb" id="fb"></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn" id="next" style="display:none">下一題</button></div>
+</section>
+
+<section id="result" class="view">
+  <header><div class="logo">🌱</div><h1>測驗成績</h1></header>
+  <div class="card score">
+    <div class="pct" id="rPct"></div><div id="rMsg" style="font-weight:600"></div>
+    <div class="stats"><div class="stat"><b id="rTotal"></b><span>總題數</span></div><div class="stat"><b id="rOk"></b><span>答對</span></div><div class="stat"><b id="rBad"></b><span>答錯</span></div></div>
+  </div>
+  <div class="card">
+    <h2>作答紀錄</h2>
+    <label class="chk"><input type="checkbox" id="onlyWrong"> 只看答錯的題目</label>
+    <div id="records"></div>
+  </div>
+  <div class="acts">
+    <button class="btn" id="again">再測一次</button>
+    <button class="btn alt" id="switch">切換模式再測</button>
+    <button class="btn ghost" id="toHome">返回首頁</button>
+  </div>
+</section>
+
 </div>
-
 <script>
-"use strict";
-
-const $ = id => document.getElementById(id);
-const DICT = "https://api.dictionaryapi.dev/api/v2/entries/en/";
-const MUSE = "https://api.datamuse.com/";
-const GT = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW";
-
-const POS_ZH = {
-  noun:"名詞",verb:"動詞",adjective:"形容詞",adverb:"副詞",
-  pronoun:"代名詞",preposition:"介系詞",conjunction:"連接詞",
-  interjection:"感嘆詞",exclamation:"感嘆詞",determiner:"限定詞"
-};
-const POS_TAG = { noun:"n", verb:"v", adjective:"adj", adverb:"adv" };
-const POS_ABBR = { noun:"n.", verb:"v.", adjective:"adj.", adverb:"adv.", pronoun:"pron.", preposition:"prep.", conjunction:"conj.", interjection:"interj.", exclamation:"excl.", determiner:"det." };
-const STOP = new Set("the a an of to in on at for with and or but is are was were be been it its this that these those i you he she we they my your his her our their as by from not no so if than then there here who which what will would can could should do does did have has had very more most also just too all any some up out off into about me him them us".split(" "));
-const DERIV_SUFFIX = /^(s|es|d|ed|ing|er|ers|est|ly|ily|ness|iness|ment|ments|ion|ions|tion|tions|ation|ations|ity|ities|able|ably|ible|al|ally|ful|fully|less|ive|ively|ize|ized|izing|ous|ously|y|ies|ied|ier|iest|ption|ptions|ptive|ition)$/;
-const INFLECTION = /^(s|es|d|ed|ing|ies|ied)$/;
-
-let searchVersion = 0;
-let activeAudio = null;
-
-function escapeHTML(value){
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[ch]);
-}
-
-async function getJSON(url){
-  const response = await fetch(url);
-  if(!response.ok) throw new Error(String(response.status));
-  return response.json();
-}
-
-/* ---------------- 翻譯 ---------------- */
-
-async function myMemory(text){
-  try{
-    const data = await getJSON("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|zh-TW");
-    const result = data?.responseData?.translatedText || "";
-    return /MYMEMORY|QUERY LENGTH|INVALID/i.test(result) ? "" : result;
-  }catch{ return ""; }
-}
-
-/* 單字：取得主要翻譯，以及各詞性的多個常用譯詞（一詞多義的中文對應） */
-async function translateWord(word){
-  const out = { main:"", byPos:{} };
-  try{
-    const data = await getJSON(GT + "&dt=t&dt=bd&q=" + encodeURIComponent(word));
-    out.main = (data[0] || []).map(part => part?.[0] || "").join("").trim();
-    (data[1] || []).forEach(group => {
-      const name = group?.[0];
-      const raw = Array.isArray(group?.[2]) && group[2].length ? group[2] : (group?.[1] || []).map(z => [z, [], 0]);
-      const rows = raw.slice(0, 12).map(r => ({
-        zh:String(r?.[0] || ""),
-        backs:(r?.[1] || []).filter(b => typeof b === "string"),
-        score:Number(r?.[2]) || 0
-      })).filter(r => r.zh);
-      /* 依常用度由高到低排序；分數過低的冷僻譯詞（如單字的古字、異體字）標為「較少見」 */
-      rows.sort((a, b) => b.score - a.score);
-      const top = rows[0]?.score || 0;
-      rows.forEach((r, i) => {
-        r.share = top > 0 ? r.score / top : 0;
-        r.rare = top > 0
-          ? (i >= 5 || r.share < 0.12 || (r.zh.length === 1 && r.share < 0.35 && i >= 2))
-          : i >= 4;
-      });
-      if(rows.length) rows[0].rare = false;
-      if(name && rows.length) out.byPos[name] = rows;
-    });
-  }catch{}
-  if(!out.main) out.main = await myMemory(word);
-  return out;
-}
-
-/* 一次翻譯多行文字，依換行對齊，比逐句請求更快也較不易被限流 */
-async function translateChunk(list){
-  const result = new Array(list.length).fill("");
-  try{
-    const data = await getJSON(GT + "&dt=t&q=" + encodeURIComponent(list.join("\n")));
-    const lines = [];
-    let buffer = "";
-    (data[0] || []).forEach(seg => {
-      if(!seg) return;
-      buffer += seg[0] || "";
-      if(/\n$/.test(seg[1] || "")){ lines.push(buffer.trim()); buffer = ""; }
-    });
-    if(buffer.trim()) lines.push(buffer.trim());
-    if(lines.length === list.length) lines.forEach((text, i) => result[i] = text);
-  }catch{}
-  await Promise.all(result.map(async (text, i) => {
-    if(!text) result[i] = await myMemory(list[i]);
-  }));
-  return result;
-}
-
-function makeChunks(items, maxChars = 1400, maxItems = 12){
-  const chunks = [];
-  let current = [], size = 0;
-  items.forEach(item => {
-    if(current.length && (size + item.text.length > maxChars || current.length >= maxItems)){
-      chunks.push(current); current = []; size = 0;
-    }
-    current.push(item); size += item.text.length;
-  });
-  if(current.length) chunks.push(current);
-  return chunks;
-}
-
-async function translateAll(items, version){
-  const norm = text => text.replace(/\s+/g, " ");
-  const unique = [...new Set(items.map(item => norm(item.text)))];
-  const done = new Map();
-  await Promise.all(makeChunks(unique.map(text => ({ text }))).map(async chunk => {
-    const results = await translateChunk(chunk.map(item => item.text));
-    chunk.forEach((item, i) => done.set(item.text, results[i]));
-    if(version !== searchVersion) return;
-    items.forEach(item => {
-      const key = norm(item.text);
-      if(!done.has(key)) return;
-      const el = $(item.id);
-      if(el) el.textContent = done.get(key) || el.dataset.fallback || "";
-    });
-  }));
-}
-
-/* ---------------- 發音 ---------------- */
-
-function speak(text){
-  if(!("speechSynthesis" in window)){
-    alert("目前瀏覽器不支援語音朗讀功能。");
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 0.88;
-  window.speechSynthesis.speak(utterance);
-}
-
-function playAudio(word, audioURL){
-  if(activeAudio){ activeAudio.pause(); activeAudio = null; }
-  if(audioURL){
-    activeAudio = new Audio(audioURL);
-    activeAudio.play().catch(() => speak(word));
-  }else speak(word);
-}
-
-/* ---------------- 查詢與資料整理 ---------------- */
-
-async function fetchEntries(word){
-  try{
-    const data = await getJSON(DICT + encodeURIComponent(word));
-    return Array.isArray(data) ? data : [];
-  }catch{ return []; }
-}
-
-/* 變化型（running、studies、better…）找不到時，推測原形 */
-function lemmaCandidates(w){
-  const list = [];
-  const add = x => { if(x && x.length > 2 && x !== w && !list.includes(x)) list.push(x); };
-  const doubled = s => /(.)\1$/.test(s);
-  if(/ies$/.test(w)) add(w.slice(0, -3) + "y");
-  if(/(ches|shes|sses|xes|zes)$/.test(w)) add(w.slice(0, -2));
-  if(/s$/.test(w) && !/ss$/.test(w)) add(w.slice(0, -1));
-  if(/ied$/.test(w)) add(w.slice(0, -3) + "y");
-  if(/ed$/.test(w)){
-    const base = w.slice(0, -2);
-    if(doubled(base)) add(base.slice(0, -1));
-    add(base); add(w.slice(0, -1));
-  }
-  if(/ing$/.test(w)){
-    const base = w.slice(0, -3);
-    if(doubled(base)) add(base.slice(0, -1));
-    add(base); add(base + "e");
-  }
-  if(/(ier|iest)$/.test(w)) add(w.replace(/(ier|iest)$/, "y"));
-  if(/(er|est)$/.test(w)){
-    const base = w.replace(/(er|est)$/, "");
-    if(doubled(base)) add(base.slice(0, -1));
-    add(base); add(base + "e");
-  }
-  if(/ly$/.test(w)) add(w.slice(0, -2));
-  return list.slice(0, 6);
-}
-
-function tagInfo(item){
-  const tags = item.tags || [];
-  const f = tags.find(t => t.startsWith("f:"));
-  return {
-    freq: f ? parseFloat(f.slice(2)) : 0,
-    pos: tags.filter(t => ["n","v","adj","adv"].includes(t))
-  };
-}
-
-/* 排除「un-、non- 加原字」之類其實是反義的衍生詞，避免混進同義詞 */
-function isOppositeForm(candidate, word){
-  return new RegExp("^(un|in|im|il|ir|non|dis|a)-?" + word.replace(/[^a-z]/g, "") + "$", "i").test(candidate);
-}
-
-function cleanWord(value){
-  const text = String(value || "").trim().toLowerCase();
-  if(!text || text.length > 24 || !/^[a-z][a-z' -]*$/.test(text)) return "";
-  return text;
-}
-
-function pushUnique(target, seen, word){
-  if(word && !seen.has(word)){ seen.add(word); target.push(word); }
-}
-
-function highlight(text, word){
-  const html = escapeHTML(text);
-  const stem = (word.length > 4 ? word.replace(/(e|y)$/, "") : word).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  try{ return html.replace(new RegExp("\\b(" + stem + "[a-z]*)", "gi"), "<b>$1</b>"); }
-  catch{ return html; }
-}
-
-function buildCollocations(word, followers, predecessors){
-  const pick = list => (Array.isArray(list) ? list : []).map(item => {
-    const w = cleanWord(item.word);
-    return w && !STOP.has(w) && w.length > 2 && !w.includes(" ") && tagInfo(item).freq >= 0.5 ? w : "";
-  }).filter(Boolean).slice(0, 5);
-  const before = pick(predecessors).map(w => `${w} ${word}`);
-  const after = pick(followers).map(w => `${word} ${w}`);
-  return [...new Set([...before, ...after])].slice(0, 8);
-}
-
-function buildDerivatives(word, list){
-  if(/[\s-]/.test(word)) return [];
-  const stem = word.replace(/(e|y)$/, "");
-  const found = (Array.isArray(list) ? list : []).map(item => ({ w:String(item.word || "").toLowerCase(), f:tagInfo(item).freq }))
-    .filter(x => /^[a-z]+$/.test(x.w) && x.w !== word && x.w.startsWith(stem) && DERIV_SUFFIX.test(x.w.slice(stem.length)) && x.f >= 0.3);
-  const derivational = found.filter(x => !INFLECTION.test(x.w.slice(stem.length)));
-  const inflected = found.filter(x => INFLECTION.test(x.w.slice(stem.length)));
-  return [...derivational, ...inflected].map(x => x.w).slice(0, 6);
-}
-
-function pickExamples(entries){
-  const all = [];
-  entries.forEach(e => e.groups.forEach(g => g.defs.forEach(d => { if(d.example) all.push(d.example.trim()); })));
-  const unique = [...new Set(all)];
-  const short = unique.filter(t => t.length <= 110);
-  return (short.length ? short : unique).slice(0, 3);
-}
-
-async function buildData(entries, word){
-  const dictSyn = [], dictAnt = [];
-  const allDefs = new Set();
-
-  /* 每個條目（同形異義詞，如 resume / résumé）各自保留音標與發音；
-     條目內依詞性分組，每組最多 10 條解釋，例句與解釋綁在一起 */
-  const built = entries.slice(0, 4).map(entry => {
-    let phonetic = entry.phonetic || "", audio = "";
-    (entry.phonetics || []).forEach(p => {
-      if(!phonetic && p.text) phonetic = p.text;
-      if(!audio && p.audio) audio = p.audio.startsWith("//") ? "https:" + p.audio : p.audio;
-    });
-    const groups = new Map();
-    (entry.meanings || []).forEach(meaning => {
-      const pos = meaning.partOfSpeech || "other";
-      if(!groups.has(pos)) groups.set(pos, { pos, defs:[] });
-      const group = groups.get(pos);
-      (meaning.definitions || []).forEach(def => {
-        if(!def.definition) return;
-        allDefs.add(def.definition);
-        if(group.defs.length < 10 && !group.defs.some(x => x.definition === def.definition)){
-          group.defs.push({ definition:def.definition, example:def.example || "" });
-        }
-        (def.synonyms || []).forEach(x => dictSyn.push(x));
-        (def.antonyms || []).forEach(x => dictAnt.push(x));
-      });
-      (meaning.synonyms || []).forEach(x => dictSyn.push(x));
-      (meaning.antonyms || []).forEach(x => dictAnt.push(x));
-    });
-    return { word:entry.word || word, phonetic, audio, groups:[...groups.values()].filter(g => g.defs.length) };
-  }).filter(e => e.groups.length);
-
-  const posTags = new Set();
-  built.forEach(e => e.groups.forEach(g => { if(POS_TAG[g.pos]) posTags.add(POS_TAG[g.pos]); }));
-  const encoded = encodeURIComponent(word);
-
-  const stem = word.replace(/(e|y)$/, "");
-  const [synData, antData, bga, bgb, derData] = await Promise.all([
-    getJSON(MUSE + "words?rel_syn=" + encoded + "&md=pf&max=40").catch(() => []),
-    getJSON(MUSE + "words?rel_ant=" + encoded + "&md=pf&max=20").catch(() => []),
-    getJSON(MUSE + "words?rel_bga=" + encoded + "&md=pf&max=25").catch(() => []),
-    getJSON(MUSE + "words?rel_bgb=" + encoded + "&md=pf&max=25").catch(() => []),
-    stem.length >= 3 && !/[\s-]/.test(word) ? getJSON(MUSE + "words?sp=" + encodeURIComponent(stem) + "*&md=f&max=40").catch(() => []) : Promise.resolve([])
-  ]);
-
-  const samePos = info => !posTags.size || !info.pos.length || info.pos.some(t => posTags.has(t));
-
-  /* 字典提供的同/反義詞優先；Datamuse 補充，但需符合詞性且不能太冷僻 */
-  const synonyms = [], antonyms = [];
-  const synSeen = new Set([word]), antSeen = new Set([word]);
-  dictSyn.map(cleanWord).forEach(w => { if(w && !isOppositeForm(w, word)) pushUnique(synonyms, synSeen, w); });
-  dictAnt.map(cleanWord).forEach(w => pushUnique(antonyms, antSeen, w));
-
-  (Array.isArray(synData) ? synData : []).forEach(item => {
-    const w = cleanWord(item.word), info = tagInfo(item);
-    if(w && samePos(info) && info.freq >= 0.5 && !isOppositeForm(w, word)) pushUnique(synonyms, synSeen, w);
-  });
-  (Array.isArray(antData) ? antData : []).forEach(item => {
-    const w = cleanWord(item.word), info = tagInfo(item);
-    if(w && samePos(info) && info.freq >= 0.2) pushUnique(antonyms, antSeen, w);
-  });
-
-  return {
-    word:built[0]?.word || word,
-    entries:built,
-    totalSenses:allDefs.size,
-    synonyms:synonyms.slice(0, 12),
-    antonyms:antonyms.slice(0, 10),
-    collocations:buildCollocations(word, bga, bgb),
-    derivatives:buildDerivatives(word, derData),
-    examples:pickExamples(built)
-  };
-}
-
-async function lookup(word){
-  let entries = await fetchEntries(word);
-  let note = "";
-  if(!entries.length && !word.includes(" ")){
-    for(const candidate of lemmaCandidates(word)){
-      entries = await fetchEntries(candidate);
-      if(entries.length){ note = `「${word}」是變化形，已為你顯示原形「${candidate}」的解釋。`; break; }
-    }
-  }
-  if(!entries.length){
-    const suggestions = await getJSON(MUSE + "sug?s=" + encodeURIComponent(word) + "&max=6")
-      .then(list => list.map(x => x.word).filter(w => w !== word)).catch(() => []);
-    return { data:null, suggestions };
-  }
-  const data = await buildData(entries, (entries[0].word || word).toLowerCase());
-  return { data, note };
-}
-
-/* ---------------- 畫面 ---------------- */
-
-function renderChips(words, type, slot){
-  if(!words.length) return '<span class="empty">目前沒有找到相關單字。</span>';
-  return '<div class="chips">' + words.map(word =>
-    `<button class="chip ${type}" data-word="${escapeHTML(word)}" title="點擊查詢 ${escapeHTML(word)}">${escapeHTML(word)}<small id="${slot(word)}"></small></button>`
-  ).join("") + '</div>';
-}
-
-const VISIBLE_DEFS = 4;
-
-function overviewHTML(byPos){
-  const groups = Object.entries(byPos);
-  if(!groups.length) return '<span class="empty">暫無中文對應資料。</span>';
-  const row = r => `<div class="ov-row"><b>${escapeHTML(r.zh)}</b>${r.backs.length ? `<span>${escapeHTML(r.backs.slice(0, 3).join(", "))}</span>` : ""}${r.share > 0 ? `<div class="ov-bar" title="相對常用度"><i style="width:${Math.max(6, Math.round(r.share * 100))}%"></i></div>` : ""}</div>`;
-  return groups.map(([pos, rows]) => {
-    const main = rows.filter(r => !r.rare);
-    const rare = rows.filter(r => r.rare);
-    return `
-    <div class="ov-group"><span class="pos">${escapeHTML(POS_ZH[pos] || pos)}</span>
-      ${main.map(row).join("")}
-      ${rare.length ? `<button class="more-btn" data-rare>較少見的譯法（${rare.length}）▾</button><div class="ov-rare" hidden>${rare.map(row).join("")}</div>` : ""}
-    </div>`;
-  }).join("");
-}
-
-function cnDefHTML(tr){
-  const lines = Object.entries(tr.byPos).map(([pos, rows]) => {
-    const zh = rows.filter(r => !r.rare).slice(0, 3).map(r => r.zh).join("、");
-    return zh ? `<div class="cn-line"><span class="posabbr">${escapeHTML(POS_ABBR[pos] || pos)}</span><span class="cn-zh">${escapeHTML(zh)}</span></div>` : "";
-  }).join("");
-  return lines || `<div class="cn-line"><span class="cn-zh">${escapeHTML(tr.main || "暫無中文翻譯")}</span></div>`;
-}
-
-async function render(data, note, version){
-  const items = [];
-  const lazy = {};
-  let counter = 0, sense = 0;
-  const slot = (text, bucket = items) => { const id = "tr-" + (counter++); bucket.push({ id, text }); return id; };
-
-  const defHTML = (def, bucket) => {
-    sense++;
-    return `
-      <div class="def-item">
-        <div class="definition"><span class="sense-no">${sense}</span>${escapeHTML(def.definition)}</div>
-        <div class="definition-zh" id="${slot(def.definition, bucket)}" data-fallback="中文翻譯暫時無法取得">${bucket === items ? "正在翻譯…" : ""}</div>
-        ${def.example ? `<div class="example">${escapeHTML(def.example)}<span class="example-zh" id="${slot(def.example, bucket)}"></span></div>` : ""}
-      </div>`;
-  };
-
-  const entriesHTML = data.entries.map((entry, ei) => {
-    const head = data.entries.length > 1 ? `
-      <div class="entry-head">
-        <span class="entry-letter">${String.fromCharCode(65 + ei)}</span>
-        <span class="entry-word">${escapeHTML(entry.word)}</span>
-        ${entry.phonetic ? `<span class="entry-ph">${escapeHTML(entry.phonetic)}</span>` : ""}
-        <button class="mini-sp" data-entry="${ei}" aria-label="播放 ${escapeHTML(entry.word)} 發音" title="播放發音">🔊</button>
-      </div>` : "";
-    const groupsHTML = entry.groups.map(group => {
-      const shown = group.defs.slice(0, VISIBLE_DEFS);
-      const rest = group.defs.slice(VISIBLE_DEFS);
-      const key = "more-" + ei + "-" + group.pos;
-      lazy[key] = [];
-      return `
-        <div class="meaning">
-          <div><span class="pos">${escapeHTML(POS_ZH[group.pos] || group.pos || "其他")}</span><span class="pos-zh" data-pos="${escapeHTML(group.pos)}"></span></div>
-          ${shown.map(def => defHTML(def, items)).join("")}
-          ${rest.length ? `<div class="more" id="${key}" hidden>${rest.map(def => defHTML(def, lazy[key])).join("")}</div>
-            <button class="more-btn" data-more="${key}">展開其餘 ${rest.length} 個詞義 ▾</button>` : ""}
-        </div>`;
-    }).join("");
-    return `<div class="entry">${head}${groupsHTML}</div>`;
-  }).join("");
-
-  const first = data.entries[0];
-  const posList = [...new Set(data.entries.flatMap(e => e.groups.map(g => g.pos)))];
-  const posCount = posList.length;
-
-  const collocHTML = data.collocations.length
-    ? `<div class="chips">${data.collocations.map(text => `<span class="chunk">${escapeHTML(text)}<small id="${slot(text)}"></small></span>`).join("")}</div>` : "";
-  const exampleHTML = data.examples.length
-    ? data.examples.map(text => `<div class="ex-item"><div class="ex-en">${highlight(text, data.word)}</div><div class="ex-zh" id="${slot(text)}"></div></div>`).join("") : "";
-  const extraRows = [
-    ["衍生字", data.derivatives, "der"],
-    ["同義詞", data.synonyms, ""],
-    ["反義詞", data.antonyms, "ant"]
-  ].filter(row => row[1].length).map(([label, list, type]) =>
-    `<div class="ex-row"><div class="ex-label">${label}</div>${renderChips(list, type, slot)}</div>`).join("");
-
-  $("result").innerHTML = `
-    ${note ? `<div class="notice">${escapeHTML(note)}</div>` : ""}
-    <div class="layout">
-      <section class="result-card study-card a-main">
-        <div class="word-top">
-          <div>
-            <div class="word">${escapeHTML(data.word)}</div>
-            <div class="sc-meta">
-              ${first?.phonetic ? `<span class="phon">${escapeHTML(first.phonetic)}</span>` : ""}
-              ${posList.map(p => `<span class="posabbr">${escapeHTML(POS_ABBR[p] || p)}</span>`).join("")}
-              <span class="badge">${data.totalSenses} 個詞義${data.entries.length > 1 ? " · " + data.entries.length + " 個條目" : ""}</span>
-            </div>
-          </div>
-          <div class="actions">
-            <button class="icon-btn" id="speakWord" aria-label="播放單字發音" title="播放發音">🔊</button>
-            <button class="icon-btn" id="copyWord" aria-label="複製單字" title="複製單字">⧉</button>
-          </div>
-        </div>
-
-        <div class="sc-block">
-          <h3 class="sc-label">中文釋義</h3>
-          <div id="cnDef"><span class="empty">正在翻譯…</span></div>
-        </div>
-        ${collocHTML ? `<div class="sc-block"><h3 class="sc-label">搭配詞與片語</h3>${collocHTML}</div>` : ""}
-        ${exampleHTML ? `<div class="sc-block"><h3 class="sc-label">情境例句</h3>${exampleHTML}</div>` : ""}
-        ${extraRows ? `<div class="sc-extra">${extraRows}</div>` : ""}
-      </section>
-
-      <section class="result-card a-ov">
-        <h2 class="card-title"><span class="dot"></span> POLYSEMY · 一詞多義（中文對應）</h2>
-        <div id="overview"><span class="empty">正在翻譯…</span></div>
-      </section>
-
-      <section class="result-card a-senses">
-        <h2 class="card-title"><span class="dot"></span> DEFINITIONS · 全部詞義、解釋與例句</h2>
-        ${entriesHTML || '<span class="empty">目前沒有英文解釋資料。</span>'}
-      </section>
-    </div>`;
-
-  $("speakWord").addEventListener("click", () => playAudio(data.word, first?.audio));
-  $("copyWord").addEventListener("click", async () => {
-    try{
-      await navigator.clipboard.writeText(data.word);
-      $("copyWord").textContent = "✓";
-      setTimeout(() => $("copyWord").textContent = "⧉", 1200);
-    }catch{
-      alert("無法自動複製，請手動選取單字。");
-    }
-  });
-  const root = $("result");
-  root.querySelectorAll("[data-word]").forEach(button => {
-    button.addEventListener("click", () => searchWord(button.dataset.word));
-  });
-  root.querySelectorAll("[data-entry]").forEach(button => {
-    const entry = data.entries[Number(button.dataset.entry)];
-    button.addEventListener("click", () => playAudio(entry.word, entry.audio));
-  });
-  root.querySelectorAll("[data-more]").forEach(button => {
-    button.addEventListener("click", () => {
-      const key = button.dataset.more;
-      $(key).hidden = false;
-      button.remove();
-      $(key).querySelectorAll(".definition-zh").forEach(el => el.textContent = "正在翻譯…");
-      translateAll(lazy[key], version);
-    });
-  });
-
-  const wordJob = translateWord(data.word).then(tr => {
-    if(version !== searchVersion) return;
-    $("cnDef").innerHTML = cnDefHTML(tr);
-    $("overview").innerHTML = overviewHTML(tr.byPos);
-    $("overview").querySelectorAll("[data-rare]").forEach(button => {
-      button.addEventListener("click", () => {
-        button.nextElementSibling.hidden = false;
-        button.remove();
-      });
-    });
-    root.querySelectorAll(".pos-zh[data-pos]").forEach(el => {
-      const rows = tr.byPos[el.dataset.pos];
-      if(rows) el.textContent = rows.filter(r => !r.rare).slice(0, 3).map(r => r.zh).join("、");
-    });
-  });
-  await Promise.all([wordJob, translateAll(items, version)]);
-}
-
-async function searchWord(raw){
-  const word = String(raw || "").trim().replace(/\s+/g, " ").replace(/[^\p{L}'\- ]/gu, "").trim().toLowerCase();
-  if(!word){ $("wordInput").focus(); return; }
-  const version = ++searchVersion;
-  $("wordInput").value = word;
-  $("searchButton").disabled = true;
-  $("result").innerHTML = '<div class="loading"><div class="skeleton"></div><div class="skeleton" style="max-width:230px"></div><p>正在查詢單字資料…</p></div>';
-  try{
-    const { data, note, suggestions } = await lookup(word);
-    if(version !== searchVersion) return;
-    if(!data){
-      const hint = suggestions?.length
-        ? `<div class="chips">${suggestions.map(w => `<button class="chip" data-word="${escapeHTML(w)}">${escapeHTML(w)}</button>`).join("")}</div>`
-        : "";
-      $("result").innerHTML = `<div class="message error">找不到「${escapeHTML(word)}」，請確認拼字後再試一次。${suggestions?.length ? "<br>你是不是想找：" : ""}${hint}</div>`;
-      $("result").querySelectorAll("[data-word]").forEach(button => {
-        button.addEventListener("click", () => searchWord(button.dataset.word));
-      });
-      return;
-    }
-    await render(data, note, version);
-  }catch(error){
-    if(version === searchVersion){
-      $("result").innerHTML = '<div class="message error">查詢失敗，可能是網路連線或字典服務暫時無法使用，請稍後再試。</div>';
-    }
-  }finally{
-    if(version === searchVersion) $("searchButton").disabled = false;
-  }
-}
-
-$("searchForm").addEventListener("submit", event => {
-  event.preventDefault();
-  searchWord($("wordInput").value);
-});
-</script>
-</body>
-</html>
+const DICT_RAW="apple:蘋果,book:書本,happy:快樂,water:水,beautiful:美麗的,cat:貓,dog:狗,house:房子,car:汽車,tree:樹,flower:花,sun:太陽,moon:月亮,star:星星,sky:天空,sea:海,river:河流,mountain:山,rain:雨,snow:雪,wind:風,fire:火,earth:地球,friend:朋友,family:家庭,mother:母親,father:父親,brother:兄弟,sister:姊妹,child:孩子,man:男人,woman:女人,teacher:老師,student:學生,doctor:醫生,school:學校,classroom:教室,library:圖書館,hospital:醫院,city:城市,country:國家,world:世界,room:房間,door:門,window:窗戶,table:桌子,chair:椅子,bed:床,kitchen:廚房,food:食物,bread:麵包,rice:米飯,milk:牛奶,egg:蛋,meat:肉,fish:魚,chicken:雞肉,fruit:水果,banana:香蕉,orange:柳橙,grape:葡萄,lemon:檸檬,strawberry:草莓,vegetable:蔬菜,potato:馬鈴薯,tomato:番茄,coffee:咖啡,tea:茶,juice:果汁,sugar:糖,salt:鹽,breakfast:早餐,lunch:午餐,dinner:晚餐,red:紅色,blue:藍色,green:綠色,yellow:黃色,black:黑色,white:白色,pink:粉紅色,purple:紫色,brown:棕色,big:大的,small:小的,long:長的,short:短的,tall:高的,high:高的,low:低的,fast:快的,slow:慢的,hot:熱的,cold:冷的,warm:溫暖的,cool:涼爽的,new:新的,old:舊的,young:年輕的,good:好的,bad:壞的,sad:悲傷的,angry:生氣的,tired:疲倦的,hungry:飢餓的,busy:忙碌的,easy:容易的,difficult:困難的,important:重要的,interesting:有趣的,funny:好笑的,kind:親切的,smart:聰明的,quiet:安靜的,clean:乾淨的,dirty:骯髒的,rich:富有的,poor:貧窮的,strong:強壯的,weak:虛弱的,safe:安全的,dangerous:危險的,free:自由的,ready:準備好的,run:跑,walk:走路,jump:跳,swim:游泳,fly:飛,eat:吃,drink:喝,sleep:睡覺,wake:醒來,sit:坐,stand:站立,read:閱讀,write:寫,speak:說話,listen:聽,look:看,watch:觀看,see:看見,hear:聽見,think:思考,know:知道,learn:學習,study:研讀,teach:教,understand:了解,remember:記得,forget:忘記,love:愛,like:喜歡,hate:討厭,want:想要,need:需要,help:幫助,give:給,take:拿,make:製作,buy:購買,sell:賣,open:打開,close:關閉,start:開始,finish:完成,come:來,go:去,play:玩,work:工作
